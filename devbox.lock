@@ -1,0 +1,365 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "nodejs@latest": {
+      "last_modified": "2024-11-03T14:18:04Z",
+      "plugin_version": "0.0.2",
+      "resolved": "github:NixOS/nixpkgs/4ae2e647537bcdbb82265469442713d066675275#nodejs_23",
+      "source": "devbox-search",
+      "version": "23.1.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ly01l9cc6lxyzfwf60k0fhxrfsbzxgvi-nodejs-23.1.0",
+              "default": true
+            },
+            {
+              "name": "libv8",
+              "path": "/nix/store/329kf3k7s5xldqm1hbb3hqhq41qqch0d-nodejs-23.1.0-libv8"
+            }
+          ],
+          "store_path": "/nix/store/ly01l9cc6lxyzfwf60k0fhxrfsbzxgvi-nodejs-23.1.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0n7dihyccg34km0x1j39njx9kkc3v1lw-nodejs-23.1.0",
+              "default": true
+            },
+            {
+              "name": "libv8",
+              "path": "/nix/store/ql540hc7qy2idfmv5jrf0vg8kisq6b40-nodejs-23.1.0-libv8"
+            }
+          ],
+          "store_path": "/nix/store/0n7dihyccg34km0x1j39njx9kkc3v1lw-nodejs-23.1.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rn9a7zgmlsg4c6jzdyslwj0hapgjlkpw-nodejs-23.1.0",
+              "default": true
+            },
+            {
+              "name": "libv8",
+              "path": "/nix/store/gr0zyx9kdmj62f8kaw6h2g9k6iypin3l-nodejs-23.1.0-libv8"
+            }
+          ],
+          "store_path": "/nix/store/rn9a7zgmlsg4c6jzdyslwj0hapgjlkpw-nodejs-23.1.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bc1blqcb391vjj251had3dbrnq5rb7md-nodejs-23.1.0",
+              "default": true
+            },
+            {
+              "name": "libv8",
+              "path": "/nix/store/ba7nrcdqp8b6mk1lfc15gz4s97jwk2sc-nodejs-23.1.0-libv8"
+            }
+          ],
+          "store_path": "/nix/store/bc1blqcb391vjj251had3dbrnq5rb7md-nodejs-23.1.0"
+        }
+      }
+    },
+    "pnpm@latest": {
+      "last_modified": "2024-11-03T14:18:04Z",
+      "resolved": "github:NixOS/nixpkgs/4ae2e647537bcdbb82265469442713d066675275#pnpm",
+      "source": "devbox-search",
+      "version": "9.12.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/jnfsa8swb9f5ac3s1mc0pnq6zjr69i0b-pnpm-9.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/jnfsa8swb9f5ac3s1mc0pnq6zjr69i0b-pnpm-9.12.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/cxqr84mgwxp3c5ns9smi1ylc24q5r4pf-pnpm-9.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/cxqr84mgwxp3c5ns9smi1ylc24q5r4pf-pnpm-9.12.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zigjwhgz3w2n63dqcpfxiz1abgf1vj3l-pnpm-9.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zigjwhgz3w2n63dqcpfxiz1abgf1vj3l-pnpm-9.12.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lw6676szir9gwzh4l9qmbnh2w8v84glg-pnpm-9.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lw6676szir9gwzh4l9qmbnh2w8v84glg-pnpm-9.12.3"
+        }
+      }
+    },
+    "poetry@latest": {
+      "last_modified": "2024-11-03T14:18:04Z",
+      "plugin_version": "0.0.4",
+      "resolved": "github:NixOS/nixpkgs/4ae2e647537bcdbb82265469442713d066675275#poetry",
+      "source": "devbox-search",
+      "version": "1.8.4",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/fx9c8g2f77q8rmvlrqwmmfhxajky9s2h-python3.12-poetry-1.8.4",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/alzz21cvbha0l4x0kvq1a1fm453sby66-python3.12-poetry-1.8.4-dist"
+            }
+          ],
+          "store_path": "/nix/store/fx9c8g2f77q8rmvlrqwmmfhxajky9s2h-python3.12-poetry-1.8.4"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mnapxlglaacqvbs5pv57wc6s83lw88dk-python3.12-poetry-1.8.4",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/35p02pqcw4489xlgp2hb3b79x04ym9px-python3.12-poetry-1.8.4-dist"
+            }
+          ],
+          "store_path": "/nix/store/mnapxlglaacqvbs5pv57wc6s83lw88dk-python3.12-poetry-1.8.4"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vmavam8zvkqpla2n8ni3zj9wb85y9xk7-python3.12-poetry-1.8.4",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/f5r1h1iap64fl9khfh6ld683zzcgwb5q-python3.12-poetry-1.8.4-dist"
+            }
+          ],
+          "store_path": "/nix/store/vmavam8zvkqpla2n8ni3zj9wb85y9xk7-python3.12-poetry-1.8.4"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/v3f7zq68gpyj4hzryzpzyz3m4fybd90a-python3.12-poetry-1.8.4",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/h7s2clpm3aryj7q651hj5v1y4prrdhi2-python3.12-poetry-1.8.4-dist"
+            }
+          ],
+          "store_path": "/nix/store/v3f7zq68gpyj4hzryzpzyz3m4fybd90a-python3.12-poetry-1.8.4"
+        }
+      }
+    },
+    "postgresql@latest": {
+      "last_modified": "2024-12-03T12:40:06Z",
+      "plugin_version": "0.0.2",
+      "resolved": "github:NixOS/nixpkgs/566e53c2ad750c84f6d31f9ccb9d00f823165550#postgresql",
+      "source": "devbox-search",
+      "version": "16.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6l498xrh9z690js5zmd3p2ps0r00ri9p-postgresql-16.5",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/5yiw867cz810zi0z2yg5y794w2sy8kzq-postgresql-16.5-man",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/9mc2nq9m18x0l7c1gyasp064cf2894vx-postgresql-16.5-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/lxqw2xsh0vm11rcz5wayhskb8w9wjlih-postgresql-16.5-doc"
+            },
+            {
+              "name": "lib",
+              "path": "/nix/store/c3a1ij8vyxv5fyg7qp6la2mn54jn84sn-postgresql-16.5-lib"
+            }
+          ],
+          "store_path": "/nix/store/6l498xrh9z690js5zmd3p2ps0r00ri9p-postgresql-16.5"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vjcavy1l0s1l0frjag900239cpmvj17f-postgresql-16.5",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/4l4a2044a6mb79sm46679ifappmj8vgc-postgresql-16.5-man",
+              "default": true
+            },
+            {
+              "name": "lib",
+              "path": "/nix/store/gr06jpjpxzqkpyyhg1f7v9mmy1f9qzgp-postgresql-16.5-lib"
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/zlw8cxkzf9a43mmplsp88dbjy8adbjkx-postgresql-16.5-debug"
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/8mbabq6zp86a1gm2nf109pa1dvgp8s02-postgresql-16.5-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/1sa3z90r6hrcfsd4hy4rxbwzbw6aa4p6-postgresql-16.5-doc"
+            }
+          ],
+          "store_path": "/nix/store/vjcavy1l0s1l0frjag900239cpmvj17f-postgresql-16.5"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/808d9axcd5q934lsi3l5v3x8phks9wc4-postgresql-16.5",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/8njx7dcc3gj9j46cn5lfc8knd52hvl7k-postgresql-16.5-man",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/pn22i14qpv3yxmaacd5yfcqxpqm3grlq-postgresql-16.5-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/kd05cfbhaiiihdx6kkrjdyrywgjzfnqj-postgresql-16.5-doc"
+            },
+            {
+              "name": "lib",
+              "path": "/nix/store/1gnp8q95nfjna56sllv66jbf6hshi6bd-postgresql-16.5-lib"
+            }
+          ],
+          "store_path": "/nix/store/808d9axcd5q934lsi3l5v3x8phks9wc4-postgresql-16.5"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0z5iwcvalafm3j2c5pfhllsfbxrbyzf4-postgresql-16.5",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/0q9yki1d9czy7i7mly8gy3ffjvc3hkqv-postgresql-16.5-man",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/zvysixjns32iz6qlkr8s5b70cw50l0qy-postgresql-16.5-debug"
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/207n898zbi7mb5scjaf532v78c3rll9f-postgresql-16.5-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/7ip3havx020h3527y7cqdl8l39p3g67b-postgresql-16.5-doc"
+            },
+            {
+              "name": "lib",
+              "path": "/nix/store/qi2zbhdnzdci7i0a6g64mbkk8wnzznlh-postgresql-16.5-lib"
+            }
+          ],
+          "store_path": "/nix/store/0z5iwcvalafm3j2c5pfhllsfbxrbyzf4-postgresql-16.5"
+        }
+      }
+    },
+    "python312@latest": {
+      "last_modified": "2024-06-12T20:55:33Z",
+      "plugin_version": "0.0.4",
+      "resolved": "github:NixOS/nixpkgs/a9858885e197f984d92d7fe64e9fff6b2e488d40#python312",
+      "source": "devbox-search",
+      "version": "3.12.3",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/65ackbgqn02p6fy75rksjbp17zj6440j-python3-3.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/65ackbgqn02p6fy75rksjbp17zj6440j-python3-3.12.3"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/59siylp1k9i3ch4d9m3vs5jp5z56b5sg-python3-3.12.3",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/ji094818a78hrkag26202b21nr5v1pgk-python3-3.12.3-debug"
+            }
+          ],
+          "store_path": "/nix/store/59siylp1k9i3ch4d9m3vs5jp5z56b5sg-python3-3.12.3"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/nrskm5p85y6751k02ih51bpzfag8g5r8-python3-3.12.3",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/nrskm5p85y6751k02ih51bpzfag8g5r8-python3-3.12.3"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zwvdwiw0zg5liz6lkkkqyab035parhld-python3-3.12.3",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/wj6mffmpvly3md2hqnq2jj8zrrw5qck9-python3-3.12.3-debug"
+            }
+          ],
+          "store_path": "/nix/store/zwvdwiw0zg5liz6lkkkqyab035parhld-python3-3.12.3"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "ai-sdk-preview-rag"
+version = "0.1.0"
+description = ""
+authors = ["Nick Yu <wiseyu@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">3.12,<3.13"
+supabase = "^2.10.0"
+ollama = "^0.3.3"
+fastapi = {extras = ["standard"], version = "^0.115.5"}
+inngest = "^0.4.16"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+python-dotenv = "^1.0.1"
+pydantic-settings = "^2.6.1"
+litellm = "^1.52.6"
+html2text = "^2024.2.26"
+playwright = "^1.48.0"
+undetected-playwright = "^0.3.0"
+markdown-it-py = "^3.0.0"
+nomic = "^3.3.3"
+nest-asyncio = "^1.6.0"
+swarm = {git = "git@github.com:thisnick/swarm.git"}
+gotrue = "^2.11.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

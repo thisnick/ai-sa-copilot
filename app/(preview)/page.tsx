@@ -136,7 +136,7 @@ const AssistantMessage = ({ message }: { message: Message | undefined }) => {
         id="markdown"
       >
         <MemoizedReactMarkdown
-          className={"max-h-72 overflow-y-scroll no-scrollbar-gutter"}
+          className={"max-h-fit no-scrollbar-gutter"}
         >
           {message.content}
         </MemoizedReactMarkdown>

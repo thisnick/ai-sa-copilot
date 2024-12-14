@@ -1,10 +1,9 @@
 import { embed, embedMany } from "ai";
-import { openai } from "@ai-sdk/openai";
 import { cosineDistance, desc, gt, sql } from "drizzle-orm";
-import { embeddings } from "../db/schema/embeddings";
-import { db } from "../db";
+import NomicTextEmbedding from "./nomic-text-embedding";
+import { createClient } from "../supabase/server";
 
-const embeddingModel = openai.embedding("text-embedding-ada-002");
+const embeddingModel = new NomicTextEmbedding({ taskType: "search_query" });
 
 const generateChunks = (input: string): string[] => {
   return input
@@ -35,12 +34,16 @@ export const generateEmbedding = async (value: string): Promise<number[]> => {
 
 export const findRelevantContent = async (userQuery: string) => {
   const userQueryEmbedded = await generateEmbedding(userQuery);
-  const similarity = sql<number>`1 - (${cosineDistance(embeddings.embedding, userQueryEmbedded)})`;
-  const similarGuides = await db
-    .select({ name: embeddings.content, similarity })
-    .from(embeddings)
-    .where(gt(similarity, 0.3))
-    .orderBy((t) => desc(t.similarity))
-    .limit(4);
-  return similarGuides;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("match_artifacts", {
+    query_embedding: JSON.stringify(userQueryEmbedded),
+    match_count: 4,
+    filter: {},
+  });
+  if (error) {
+    throw Error(error.message);
+  }
+  const filteredData = data.filter((d) => d.similarity > 0.3);
+
+  return filteredData;
 };

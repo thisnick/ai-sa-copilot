@@ -1,0 +1,124 @@
+import asyncio
+import os
+from typing import Dict, List, Literal, Optional, TypedDict
+
+from nomic.embed import text as embed_text
+
+from .types import (
+  ArtifactWithLinks,
+  ArtifactSearchResult,
+  KnowledgeTopic,
+  ResearchTopic,
+  RunbookSection
+)
+from api.lib.supabase import create_async_supabase_client
+
+
+def format_knowledge_topics(topics: List[KnowledgeTopic]) -> str:
+  return "\n".join(
+    [
+      f"{i+1}. {topic.topic}: ({', '.join(topic.key_concepts)})"
+      for i, topic in enumerate(topics)
+    ]
+  )
+
+
+def format_research_topic(topic: ResearchTopic) -> str:
+  return f"- Topic: {topic.research_question}\nRelated Key Concepts: {', '.join(topic.related_key_concepts)}\nRelated User Requirements: {topic.related_user_requirements}"
+
+
+def format_related_artifacts(artifact: ArtifactWithLinks) -> str:
+  outbound_links = (
+    "\n".join(
+      [
+        f"- Title: {link.title}\n  Artifact ID: {link.artifact_id}\n  Summary: {link.summary}"
+        for link in artifact.outbound_links or []
+      ]
+    )
+    or "None"
+  )
+  inbound_links = (
+    "\n".join([
+      f"- Title: {link.title}\n  Artifact ID: {link.artifact_id}\n  Summary: {link.summary}"
+      for link in artifact.inbound_links or []
+    ])
+    or "None"
+  )
+  return f"Outbound Links:\n{outbound_links}\n\nInbound Links:\n{inbound_links}"
+
+
+def format_artifacts(artifacts: List[ArtifactWithLinks], include_links: bool = False) -> str:
+  return "\n\n---\n\n".join([
+    f"# Title: {artifact.title}\n\n## Artifact ID: \n\n{artifact.artifact_id}\n\n## Content: \n\n{artifact.parsed_text}" +
+    (f"\n\nRelated Artifacts:\n{format_related_artifacts(artifact)}" if include_links else "")
+    for artifact in artifacts
+  ])
+
+def format_topic_artifacts(artifacts: Dict[str, List[ArtifactWithLinks]], include_links: bool = False) -> str:
+  return "\n\n---\n\n".join([
+    f"Research Topic: {topic}:\n\nRetrieved Artifacts:\n{format_artifacts(artifacts, include_links)}"
+    for topic, artifacts in artifacts.items()
+  ])
+
+def format_written_sections(sections: List[RunbookSection], up_to: Optional[int] = None) -> str:
+  return "\n\n---\n\n".join([section.content for section in sections[:up_to] if section.content]) or "None"
+
+def format_runbook_section_outline(section: RunbookSection) -> str:
+  return f"## Section Title: {section.section_title}\n\n## Outline:\n{section.outline}"
+
+async def async_get_artifacts_from_supabase(artifact_ids: List[str]) -> List[Dict]:
+  """Fetches basic artifact data from Supabase."""
+  supabase = await create_async_supabase_client()
+  artifacts_response = await (
+    supabase
+    .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
+    .execute()
+  )
+  return artifacts_response.data
+
+async def async_get_artifacts(
+  artifact_ids: List[str], with_links: bool = False
+) -> List[ArtifactWithLinks]:
+  supabase = await create_async_supabase_client()
+  artifacts_response = await (
+    supabase
+    .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
+    .execute()
+  )
+  return [ArtifactWithLinks.model_validate(artifact) for artifact in artifacts_response.data]
+
+async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
+  embeddings = embed_text(
+    texts=queries,
+    model='nomic-embed-text-v1.5',
+    task_type="search_query",
+  )
+
+  supabase = await create_async_supabase_client()
+
+  responses = await asyncio.gather(*[
+    supabase.rpc("match_artifacts", {
+      "query_embedding": embedding,
+      "match_count": 4,
+      "filter": {}
+    }).execute()
+    for embedding in embeddings['embeddings']
+  ])
+
+  # Flatten the responses array and extract data
+  flattened_responses : List[ArtifactSearchResult] = [
+    {
+      "artifact_id": item["artifact_id"],
+      "url": item["url"],
+      "title": item["title"],
+      "summary": item["summary"],
+      "similarity": item["similarity"],
+      "main_sections": item.get("metadata", {}).get("main_sections", [])
+    }
+    for response in responses
+    for item in response.data
+  ]
+
+  return {
+    "artifacts": flattened_responses,
+  }
