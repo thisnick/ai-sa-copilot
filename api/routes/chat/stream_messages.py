@@ -1,20 +1,17 @@
+import json
 from pydantic import BaseModel, TypeAdapter
 from pydantic.json import pydantic_encoder
 from typing import AsyncGenerator, List, Dict, Any, Literal, Optional, cast
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from supabase import AsyncClient
-import json
-import asyncio
 
+from api.agents.contexts import get_supabase_client_from_context
 from api.agents.types import ContextVariables
 from api.db.types import Thread
-from api.lib.supabase import create_async_supabase_client, get_server_supabase_client
 from api.agents import stream_response
 from swarm.types import (
     Message,
-    AsyncAgent,
-    AsyncResponse,
     AsyncStreamingResponse as AsyncSwarmStreamingResponse,
     AsyncMessageStreamingChunk,
     AsyncDelimStreamingChunk,
@@ -24,38 +21,36 @@ from swarm.types import (
 
 router = APIRouter()
 
+
 class Request(BaseModel):
+  domain_id: str
+  thread_id: str
   message: str
 
 async def get_thread_data(
   thread_id: str,
   user_id: str,
-  supabase: AsyncClient
+  domain_id: str,
 ) -> tuple[str, Optional[str], List[Message], ContextVariables]:
-  if thread_id == "new":
+  supabase = get_supabase_client_from_context()
+  thread_response = await (
+    supabase
+    .table("threads")
+    .select("*, state:thread_states!last_known_good_thread_state_id(*)")
+    .eq("thread_id", thread_id)
+    .limit(1)
+    .execute()
+  )
+  if thread_response.data is None or len(thread_response.data) == 0:
     thread_response = await (
       supabase
       .table("threads")
       .insert({
         "user_id": user_id,
+        "thread_id": thread_id,
         "thread_type": "runbook_generator"
       })
       .execute()
-    )
-  else:
-    thread_response = await (
-      supabase
-      .table("threads")
-      .select("*, state:thread_states!last_known_good_thread_state_id(*)")
-      .eq("thread_id", thread_id)
-      .limit(1)
-      .execute()
-    )
-
-  if thread_response.data is None or len(thread_response.data) == 0:
-    raise HTTPException(
-      status_code=404,
-      detail="Thread not found"
     )
 
   agent_name = None
@@ -64,19 +59,21 @@ async def get_thread_data(
 
   if thread_response and thread_response.data and len(thread_response.data) > 0:
     thread: Thread = thread_response.data[0]
-    agent_name = thread.get('state', {}).get("agent_name")
-    messages = thread.get('state', {}).get("messages", [])
-    context_variables = thread.get('state', {}).get("context_variables", {})
+    thread_state = thread.get('state') or {}
+    agent_name = thread_state.get("agent_name")
+    messages = thread_state.get("messages", [])
+    context_variables = thread_state.get("context_variables", {})
     thread_id = thread.get("thread_id")
 
+  context_variables["domain_id"] = domain_id
   return thread_id, agent_name, messages, context_variables
 
 async def generate_stream(
   swarm_response: AsyncSwarmStreamingResponse,
   thread_id: str,
   messages: List[Message],
-  supabase: AsyncClient
 ) -> AsyncGenerator[str, None]:
+  supabase = get_supabase_client_from_context()
   async for chunk in swarm_response:
     if "sender" in chunk:
       chunk = cast(AsyncMessageStreamingChunk, chunk)
@@ -109,16 +106,18 @@ async def generate_stream(
 
     if "partial_response" in chunk:
       chunk = cast(AsyncDeltaResponseStreamingChunk, chunk)
+      context_variables_update_dict = json.loads(json.dumps(chunk["partial_response"].context_variables, default=pydantic_encoder))
 
       await (
         supabase.table("thread_states").insert({
           "thread_id": thread_id,
           "messages": chunk["partial_response"].messages,
-          "context_variables": json.loads(json.dumps(chunk["partial_response"].context_variables, default=pydantic_encoder)),
+          "context_variables": context_variables_update_dict,
           "agent_name": chunk["partial_response"].agent.name if chunk["partial_response"].agent else None
         })
         .execute()
       )
+      yield f"2:{json.dumps({'context_variables': context_variables_update_dict})}\n"
 
     if "response" in chunk:
       chunk = cast(AsyncResponseStreamingChunk, chunk)
@@ -147,13 +146,12 @@ async def generate_stream(
   # end message
   yield f"d:{json.dumps(response_data)}\n"
 
-@router.post("/{thread_id}")
+@router.post("/chat")
 async def stream_messages(
-  thread_id: str,
   request: Request,
-  protocol: Literal["data", "text"] = "data",
-  supabase: AsyncClient = Depends(get_server_supabase_client)
+  protocol: Literal["data", "text"] = "data"
 ) -> StreamingResponse:
+  supabase = get_supabase_client_from_context()
   if protocol == "text":
     raise HTTPException(
       status_code=400,
@@ -169,9 +167,9 @@ async def stream_messages(
     )
 
   thread_id, agent_name, messages, context_variables = await get_thread_data(
-    thread_id,
+    request.thread_id,
     user_response.user.id,
-    supabase
+    request.domain_id
   )
 
   assert isinstance(context_variables, dict)
@@ -181,7 +179,7 @@ async def stream_messages(
   swarm_response = await stream_response(messages, agent_name, context_variables)
 
   return StreamingResponse(
-    generate_stream(swarm_response, thread_id, messages, supabase),
+    generate_stream(swarm_response, thread_id, messages),
     media_type="text/event-stream",
     headers={
       "Content-Type": "text/event-stream",

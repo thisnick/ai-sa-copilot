@@ -8,7 +8,7 @@ from ..config import Settings
 settings = Settings()
 security = HTTPBearer()
 
-async def create_async_supabase_client() -> AsyncClient:
+async def create_async_supabase_admin_client() -> AsyncClient:
   return await create_async_client(settings.next_public_supabase_url, settings.supabase_service_role_key)
 
 async def get_server_supabase_client(
@@ -31,5 +31,5 @@ async def get_server_supabase_client(
 
 __all__ = [
   "get_server_supabase_client",
-  "create_async_supabase_client",
+  "create_async_supabase_admin_client",
 ]

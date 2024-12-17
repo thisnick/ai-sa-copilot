@@ -18,7 +18,7 @@ from .topic_research_agent import create_topic_research_agent
 from .intermediate_context_variables import AFTER_PLANNING, AFTER_REQUIREMENTS_GATHERING, AFTER_TOPIC_RESEARCH_COMPLETE
 from .llm import AsyncLiteLLM
 
-from api.lib.supabase import create_async_supabase_client
+from .contexts import get_supabase_client_from_context
 
 # Apply the patch
 settings = Settings()
@@ -30,28 +30,9 @@ USER_INPUT = "Give me a runbook for deploying Databricks on AWS. No other requir
 DOMAIN_ID = "b54feb10-5011-429e-8585-35913d797d8e"
 
 
-async def async_get_knowledge_topics(domain_id: str) -> List[KnowledgeTopic]:
-  supabase = await create_async_supabase_client()
-  top_level_clusters_response = await supabase.rpc("get_top_level_clusters", {"target_domain_id": domain_id}).execute()
-  top_level_clusters = cast(List[TopLevelCluster], top_level_clusters_response.data)
-
-  results = [
-    KnowledgeTopic(
-      topic=cluster["summary"]["main_theme"],
-      key_concepts=list(cluster["summary"]["key_concepts"])
-    )
-    for cluster in top_level_clusters
-    if cluster["summary"] is not None
-  ]
-  return results
-
 
 async def get_initial_context() -> ContextVariables:
-  return ContextVariables(
-    root_topics=await async_get_knowledge_topics(DOMAIN_ID)
-  )
-
-
+  return ContextVariables(domain_id=DOMAIN_ID)
 
 async def process_and_print_streaming_response(response : AsyncStreamingResponse) -> Optional[AsyncResponse]:
     content = ""

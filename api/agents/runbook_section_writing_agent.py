@@ -10,6 +10,7 @@ from api.config import Settings
 from .agent_map import AGENT_RUNBOOK_SECTION_WRITING
 from .tools import (
   async_get_artifacts,
+  async_get_knowledge_topics,
   async_query_for_artifacts,
   format_artifacts,
   format_knowledge_topics,
@@ -33,6 +34,9 @@ def create_runbook_section_writing_agent(settings: Settings) -> AsyncAgent:
     ]
     section_research_artifacts = (context_variables.get("section_research_artifacts") or {}).get(current_section_idx) or []
     artifacts = artifacts + section_research_artifacts
+    domain_id = context_variables.get("domain_id")
+    formatted_topics = format_knowledge_topics(await async_get_knowledge_topics(domain_id)) if domain_id else ""
+
 
     prompt = f"""You are an agent responsible for fleshing out the detail sections
 of a runbook to set up a software system.
@@ -102,7 +106,7 @@ Remember:
 
 # Core topics and key concepts in the knowledge base:
 
-{format_knowledge_topics((context_variables.get("root_topics") or []))}
+{formatted_topics}
 
 # Supporting artifacts for this section:
 

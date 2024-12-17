@@ -10,7 +10,7 @@ from litellm.types.utils import ModelResponse, Choices
 from pydantic import BaseModel, Field
 
 # from concurrent.futures import ThreadPoolExecutor
-from api.lib.supabase import create_async_supabase_client
+from api.lib.supabase import create_async_supabase_admin_client
 
 load_dotenv()
 
@@ -47,7 +47,7 @@ class ClusterSummarizer:
 
   async def get_supabase(self):
     if not self.supabase:
-      self.supabase = await create_async_supabase_client()
+      self.supabase = await create_async_supabase_admin_client()
     return self.supabase
 
   async def get_cluster_info(self, domain_id: str, cluster_id: str, iteration: int) -> ClusterInfo:

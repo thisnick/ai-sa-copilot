@@ -2,7 +2,11 @@ import asyncio
 import os
 from typing import Dict, List, Literal, Optional, TypedDict
 
+from litellm import cast
 from nomic.embed import text as embed_text
+from supabase import AsyncClient
+
+from api.db.types import TopLevelCluster
 
 from .types import (
   ArtifactWithLinks,
@@ -11,8 +15,23 @@ from .types import (
   ResearchTopic,
   RunbookSection
 )
-from api.lib.supabase import create_async_supabase_client
+from .contexts import get_supabase_client_from_context
 
+
+async def async_get_knowledge_topics(domain_id: str) -> List[KnowledgeTopic]:
+  supabase = get_supabase_client_from_context()
+  top_level_clusters_response = await supabase.rpc("get_top_level_clusters", {"target_domain_id": domain_id}).execute()
+  top_level_clusters = cast(List[TopLevelCluster], top_level_clusters_response.data)
+
+  results = [
+    KnowledgeTopic(
+      topic=cluster["summary"]["main_theme"],
+      key_concepts=list(cluster["summary"]["key_concepts"])
+    )
+    for cluster in top_level_clusters
+    if cluster["summary"] is not None
+  ]
+  return results
 
 def format_knowledge_topics(topics: List[KnowledgeTopic]) -> str:
   return "\n".join(
@@ -68,7 +87,7 @@ def format_runbook_section_outline(section: RunbookSection) -> str:
 
 async def async_get_artifacts_from_supabase(artifact_ids: List[str]) -> List[Dict]:
   """Fetches basic artifact data from Supabase."""
-  supabase = await create_async_supabase_client()
+  supabase = get_supabase_client_from_context()
   artifacts_response = await (
     supabase
     .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
@@ -79,7 +98,7 @@ async def async_get_artifacts_from_supabase(artifact_ids: List[str]) -> List[Dic
 async def async_get_artifacts(
   artifact_ids: List[str], with_links: bool = False
 ) -> List[ArtifactWithLinks]:
-  supabase = await create_async_supabase_client()
+  supabase = get_supabase_client_from_context()
   artifacts_response = await (
     supabase
     .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
@@ -94,7 +113,7 @@ async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifac
     task_type="search_query",
   )
 
-  supabase = await create_async_supabase_client()
+  supabase = get_supabase_client_from_context()
 
   responses = await asyncio.gather(*[
     supabase.rpc("match_artifacts", {

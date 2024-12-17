@@ -31,7 +31,7 @@ class RunbookSection(RunbookSectionOutline):
   content: str | None = Field(default=None, description="The content of the section")
 
 class ContextVariables(TypedDict, total=False):
-  root_topics: Optional[List[KnowledgeTopic]]
+  domain_id: Optional[str]
   user_requirements: Optional[List[str]]
   research_topics: Optional[List[ResearchTopic]]
   current_research_topic: Optional[int]

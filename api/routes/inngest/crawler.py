@@ -8,7 +8,7 @@ import re
 from ...lib.scraper import WebScraper
 from .events import CrawlRequestedEvent, CrawlRequestedEventData
 from ...lib.inngest import inngest_client
-from ...lib.supabase import create_async_supabase_client
+from ...lib.supabase import create_async_supabase_admin_client
 from ...db.types import Artifact, ArtifactLink
 from ...lib.metadata import ArtifactMetadata, Link
 
@@ -29,7 +29,7 @@ DATABRICK_ALLOWED_URL_PATTERNS = [
   trigger=inngest.TriggerEvent(event="one-off/continue-crawl"),
 )
 async def continue_crawl(ctx: inngest.Context, step: inngest.Step):
-  supabase = await create_async_supabase_client()
+  supabase = await create_async_supabase_admin_client()
 
   event_payload = [
     CrawlRequestedEvent(data=CrawlRequestedEventData(
@@ -67,7 +67,7 @@ async def crawl_url(ctx: inngest.Context, step: inngest.Step):
         ]
     return step.send_event(step_id, events)
 
-  admin_supabase = await create_async_supabase_client()
+  admin_supabase = await create_async_supabase_admin_client()
   return await _crawl_url(
     event.data,
     schedule_crawl
@@ -94,7 +94,7 @@ async def _crawl_url(
     print(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {MAX_CRAWL_DEPTH}, skipping")
     return
 
-  admin_supabase = await create_async_supabase_client()
+  admin_supabase = await create_async_supabase_admin_client()
 
   existing_artifact_response = await admin_supabase\
     .table("artifacts")\

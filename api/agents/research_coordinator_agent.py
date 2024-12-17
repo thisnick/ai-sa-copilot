@@ -6,14 +6,14 @@ from swarm.types import AsyncResult
 
 from api.config import Settings
 from .types import ContextVariables, ResearchTopic
-from .tools import format_knowledge_topics
+from .tools import async_get_knowledge_topics, format_knowledge_topics
 from .agent_map import AGENT_RESEARCH_COORDINATOR
 
 
 def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
   async def instructions(context_variables: ContextVariables):
-    topics = context_variables.get("root_topics") or []
-    formatted_topics = format_knowledge_topics(topics)
+    domain_id = context_variables.get("domain_id")
+    formatted_topics = format_knowledge_topics(await async_get_knowledge_topics(domain_id)) if domain_id else ""
     return f"""You are a research coordinator agent. You are helping a research run books for solutions.
     Here is your workflow:
     1. If the user's request is vague or too broad, before continuing to the next step, ask the user to explain the goal they want to achieve. You

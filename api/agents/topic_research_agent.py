@@ -10,7 +10,7 @@ from api.config import Settings
 
 from .agent_map import AGENT_TOPIC_RESEARCH
 from .types import ArtifactSearchResult, ContextVariables
-from .tools import async_get_artifacts, async_query_for_artifacts, format_knowledge_topics, format_research_topic
+from .tools import async_get_artifacts, async_get_knowledge_topics, async_query_for_artifacts, format_knowledge_topics, format_research_topic
 
 def create_topic_research_agent(settings: Settings) -> AsyncAgent:
   async def instructions(context_variables: ContextVariables):
@@ -22,8 +22,9 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     else:
       formatted_topic = "No research topics available"
 
-    knowledge_topics = context_variables.get("root_topics") or []
-    formatted_knowledge_topics = format_knowledge_topics(knowledge_topics)
+    domain_id = context_variables.get("domain_id")
+    formatted_knowledge_topics = format_knowledge_topics(await async_get_knowledge_topics(domain_id)) if domain_id else ""
+
 
     return f"""You are a research agent investigating a research topic. Your goal
     is to find the documents that are relevant to the user's question filter them to
