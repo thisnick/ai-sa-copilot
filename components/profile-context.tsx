@@ -6,6 +6,8 @@ import { createContext, use, useEffect, useState } from "react";
 
 export type Profile = {
   profile?: Tables<"profiles">,
+  accessToken?: string,
+  refreshToken?: string,
   isLoading: boolean,
 };
 
@@ -35,7 +37,12 @@ export function ProfileContextProvider({ children }: { children: React.ReactNode
         setProfile({ isLoading: false });
         return;
       }
-      setProfile({ profile, isLoading: false });
+      setProfile({
+        profile,
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+        isLoading: false
+      });
 
     };
 

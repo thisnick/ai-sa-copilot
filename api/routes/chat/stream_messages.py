@@ -106,8 +106,6 @@ async def generate_stream(
 
     if "partial_response" in chunk:
       chunk = cast(AsyncDeltaResponseStreamingChunk, chunk)
-      context_variables_update_dict = json.loads(json.dumps(chunk["partial_response"].context_variables, default=pydantic_encoder))
-
       await (
         supabase.table("thread_states").insert({
           "thread_id": thread_id,
@@ -117,7 +115,21 @@ async def generate_stream(
         })
         .execute()
       )
-      yield f"2:{json.dumps({'context_variables': context_variables_update_dict})}\n"
+      messages = chunk["partial_response"].messages
+      for message in messages:
+        if message['role'] == 'tool':
+          tool_result_data = {
+            'toolCallId': message["tool_call_id"],
+            "result": message["content"]
+          }
+          yield f"a:{json.dumps(tool_result_data)}\n"
+
+      context_variables_update_dict = json.loads(json.dumps(chunk["partial_response"].context_variables, default=pydantic_encoder))
+
+      yield f"2:{json.dumps([{
+        "type": "context_update",
+        'context_variables': context_variables_update_dict
+      }])}"
 
     if "response" in chunk:
       chunk = cast(AsyncResponseStreamingChunk, chunk)

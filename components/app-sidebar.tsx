@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-// import { PlusIcon } from '@/components/icons';
+import { PlusIcon } from '@/components/icons';
 // import { SidebarHistory } from '@/components/sidebar-history';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ export function AppSidebar() {
               className="flex flex-row gap-3 items-center"
             >
               <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                SA Copilot
+                Run Book Maker
               </span>
             </Link>
             <Tooltip>
@@ -51,7 +51,7 @@ export function AppSidebar() {
                     router.refresh();
                   }}
                 >
-                  {/* <PlusIcon /> */}
+                  <PlusIcon />
                 </Button>
               </TooltipTrigger>
               <TooltipContent align="end">New Chat</TooltipContent>

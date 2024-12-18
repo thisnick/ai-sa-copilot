@@ -1,34 +1,40 @@
-"use server";
+"use client";
 
-import OauthSignIn from '../components/oauth-signin';
-import SignIn from './sign-in';
-
+import OauthSignIn from '@/components/oauth-signin';
+import { ProfileContext } from '@/components/profile-context';
+import { redirect } from 'next/navigation';
+import { useContext } from 'react';
 
 import { BrainCircuit } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function LoginPage() {
+
+export default function SignIn() {
+  // Check if the user is already logged in and redirect to the account page if so
+  const { profile } = useContext(ProfileContext);
+
+  if (profile) {
+    return redirect('/');
+  }
+
   return (
-    <SignIn>
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <div className="flex items-center justify-center mb-4">
-              <BrainCircuit className="h-12 w-12 text-blue-500" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-center">Solutions Architect Copilot</CardTitle>
-            <CardDescription className="text-center">
-              Access your AI-powered solutions architect assistant. Sign up to get started.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <OauthSignIn />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </SignIn>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <div className="flex items-center justify-center mb-4">
+          <BrainCircuit className="h-12 w-12 text-blue-500" />
+        </div>
+        <CardTitle className="text-2xl font-bold text-center">Run Book Maker</CardTitle>
+        <CardDescription className="text-center">
+          Create detailed step-by-step guides powered by AI research of product documentation.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <OauthSignIn />
+        </div>
+      </CardContent>
+    </Card>
+  </div>
   )
 }
-
