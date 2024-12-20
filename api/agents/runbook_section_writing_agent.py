@@ -143,10 +143,13 @@ Remember:
       queries: an array of strings in JSON format, i.e. `["query1", "query2", ...]`. Make sure it is a valid JSON array.
       If there is only one query, you should still enclose it in an array, i.e. `["query1"]`.
     """
-    if isinstance(queries, str):
-      queries = json.loads(queries)
+    try:
+      if isinstance(queries, str):
+        queries = json.loads(queries)
 
-    return await async_query_for_artifacts(queries)
+      return await async_query_for_artifacts(queries)
+    except Exception as e:
+      return AsyncResult(value=f"Error querying for artifacts: {e}")
 
   async def retrieve_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
     """Retrieve the contents of the related artifacts.
@@ -155,45 +158,51 @@ Remember:
       artifact_ids: an array of related artifact IDs in JSON format,
         i.e. `["artifact_id1", "artifact_id2", ...]`. Make sure it is formatted as a valid JSON array of strings.
     """
-    return await async_retrieve_artifacts(context_variables, artifact_ids)
+    try:
+      return await async_retrieve_artifacts(context_variables, artifact_ids)
+    except Exception as e:
+      return AsyncResult(value=f"Error retrieving artifacts: {e}")
 
   async def submit_writing_for_section(context_variables: Dict[str, Any], section_content: str) -> AsyncResult:
-    """Write the section content.
+    """Write the section content. If there are more sections to write, move on to the next section.
+    Otherwise, save the runbook and hand off the next steps back to the research coordinator agent.
 
     Arguments:
       section_content: the content of the section to write in Markdown format.
     """
+    try:
+      current_section_idx = context_variables.get("current_runbook_section", 0)
+      all_sections = context_variables.get("runbook_sections", []).copy()
+      current_section = all_sections[current_section_idx]
+      current_section.content = section_content
 
-    current_section_idx = context_variables.get("current_runbook_section", 0)
-    all_sections = context_variables.get("runbook_sections", []).copy()
-    current_section = all_sections[current_section_idx]
-    current_section.content = section_content
+      if current_section_idx + 1 >= len(all_sections):
+        if context_variables.get("debug", False):
+          print("Session writing complete", context_variables.get("runbook_sections", {}))
+        # Save all sections to a markdown file
+        with open("runbook.md", "w") as f:
+          f.write("\n\n".join(section.content for section in all_sections))
 
-    if current_section_idx + 1 >= len(all_sections):
-      if context_variables.get("debug", False):
-        print("Session writing complete", context_variables.get("runbook_sections", {}))
-      # Save all sections to a markdown file
-      with open("runbook.md", "w") as f:
-        f.write("\n\n".join(section.content for section in all_sections))
+        from .research_coordinator_agent import create_research_coordinator_agent
+        return AsyncResult(
+          value="All sections written",
+          context_variables={
+            "runbook_sections": all_sections,
+            "current_runbook_section": current_section_idx + 1
+          },
+          agent=create_research_coordinator_agent(settings)
+        )
 
-      from .research_coordinator_agent import create_research_coordinator_agent
       return AsyncResult(
-        value="All sections written",
+        value=f"Section {current_section_idx + 1} written",
         context_variables={
           "runbook_sections": all_sections,
           "current_runbook_section": current_section_idx + 1
         },
-        agent=create_research_coordinator_agent(settings)
+        agent=create_runbook_section_writing_agent(settings)
       )
-
-    return AsyncResult(
-      value=f"Section {current_section_idx + 1} written",
-      context_variables={
-        "runbook_sections": all_sections,
-        "current_runbook_section": current_section_idx + 1
-      },
-      agent=create_runbook_section_writing_agent(settings)
-    )
+    except Exception as e:
+      return AsyncResult(value=f"Error submitting writing for section: {e}")
 
   return AsyncAgent(
     name=AGENT_RUNBOOK_SECTION_WRITING,

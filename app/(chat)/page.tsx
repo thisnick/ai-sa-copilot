@@ -16,6 +16,7 @@ export default async function Page() {
       key={id}
       id={id}
       initialMessages={[]}
+      initialContext={{}}
       domainId={domainId}
     />
   );

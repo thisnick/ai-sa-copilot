@@ -65,38 +65,19 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     """
 
 
-  async def query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:    # Create a new event loop for this sync function
+  async def query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]] | str:    # Create a new event loop for this sync function
     """Query for artifacts that are related to the query and return their summaries
 
     Arguments:
       queries: an array of strings in JSON format, i.e. `["query1", "query2", ...]`. Make sure it is a valid JSON array.
     """
-    if isinstance(queries, str):
-      queries = json.loads(queries)
+    try:
+      if isinstance(queries, str):
+        queries = json.loads(queries)
+      return await async_query_for_artifacts(queries)
+    except Exception as e:
+      return f"Error querying for artifacts: {e}"
 
-    return await async_query_for_artifacts(queries)
-
-
-  async def async_save_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
-    """Saves the artifacts to the research context with their inbound and outbound links
-
-    Arguments:
-      artifact_ids: an array of artifact IDs in JSON format, i.e. `["artifact_id1", "artifact_id2", ...]`. Make sure it is a valid JSON array.
-    """
-    if isinstance(artifact_ids, str):
-      artifact_ids = json.loads(artifact_ids)
-
-    artifacts = await async_get_artifacts(artifact_ids, with_links=True)
-
-    return AsyncResult(
-      value="Artifacts saved successfully",
-      context_variables={
-        "saved_artifacts": {
-          **(context_variables.get("saved_artifacts") or {}),
-          (context_variables.get("research_topics") or [])[context_variables.get("current_research_topic") or 0].research_question: artifacts
-        }
-      }
-    )
 
   async def save_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
     """Saves the *relevant* artifacts to the research context. Limit the number of artifacts saved to no more than 5.
@@ -104,31 +85,54 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     Arguments:
       artifact_ids: an array of artifact IDs in JSON format, i.e. `["artifact_id1", "artifact_id2", ...]`. Make sure it is a valid JSON array.
     """
-    return await async_save_artifacts(context_variables, artifact_ids)
+    try:
+      if isinstance(artifact_ids, str):
+        artifact_ids = json.loads(artifact_ids)
+
+      artifacts = await async_get_artifacts(artifact_ids, with_links=True)
+
+      return AsyncResult(
+        value="Artifacts saved successfully",
+        context_variables={
+          "saved_artifacts": {
+            **(context_variables.get("saved_artifacts") or {}),
+            (context_variables.get("research_topics") or [])[context_variables.get("current_research_topic") or 0].research_question: artifacts
+          }
+        }
+      )
+    except Exception as e:
+      return AsyncResult(value=f"Error saving artifacts: {e}")
 
   async def finish_research(context_variables: Dict[str, Any]) -> AsyncResult:
-    current = context_variables.get("current_research_topic", 0)
-    topics = context_variables.get("research_topics", [])
+    """Finish the research of this topic. If there are more topics to research,
+    move on to the next topic. Otherwise, hand off the research to the
+    runbook planning agent.
+    """
+    try:
+      current = context_variables.get("current_research_topic", 0)
+      topics = context_variables.get("research_topics", [])
 
-    if current + 1 >= len(topics):
-      if context_variables.get("debug", False):
-        print("saved_artifacts", context_variables.get("saved_artifacts", {}))
+      if current + 1 >= len(topics):
+        if context_variables.get("debug", False):
+          print("saved_artifacts", context_variables.get("saved_artifacts", {}))
 
-      from .runbook_planning_agent import create_runbook_planning_agent
+        from .runbook_planning_agent import create_runbook_planning_agent
+        return AsyncResult(
+          value="Research complete",
+          context_variables={
+            "current_expansion_topic": 0
+          },
+          agent=create_runbook_planning_agent(settings)
+        )
+
+
       return AsyncResult(
-        value="Research complete",
-        context_variables={
-          "current_expansion_topic": 0
-        },
-        agent=create_runbook_planning_agent(settings)
+        value="Moving to next topic",
+        context_variables={"current_research_topic": current + 1},
+        agent=create_topic_research_agent(settings)
       )
-
-
-    return AsyncResult(
-      value="Moving to next topic",
-      context_variables={"current_research_topic": current + 1},
-      agent=create_topic_research_agent(settings)
-    )
+    except Exception as e:
+      return AsyncResult(value=f"Error finishing research: {e}")
 
   return AsyncAgent(
     name=AGENT_TOPIC_RESEARCH,

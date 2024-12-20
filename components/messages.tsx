@@ -5,11 +5,12 @@ import { Overview } from "./overview"
 // import { UIBlock } from './block';
 import { Dispatch, memo, SetStateAction, useEffect } from 'react';
 import equal from 'fast-deep-equal';
+import { UIBlock } from './block';
 
 interface MessagesProps {
   chatId: string;
-  // block: UIBlock;
-  // setBlock: Dispatch<SetStateAction<UIBlock>>;
+  block: UIBlock;
+  setBlock: Dispatch<SetStateAction<UIBlock>>;
   isLoading: boolean;
   messages: Array<Message>;
   setMessages: (
@@ -22,8 +23,8 @@ interface MessagesProps {
 
 function PureMessages({
   chatId,
-  // block,
-  // setBlock,
+  block,
+  setBlock,
   isLoading,
   messages,
   setMessages,
@@ -44,8 +45,8 @@ function PureMessages({
           key={message.id}
           chatId={chatId}
           message={message}
-          // block={block}
-          // setBlock={setBlock}
+          block={block}
+          setBlock={setBlock}
         />
 
       ))}

@@ -23,6 +23,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       key={id}
       id={id}
       initialMessages={messages}
+      initialContext={context}
       domainId={domainId}
     />
   );

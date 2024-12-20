@@ -30,7 +30,7 @@ async def stream_response(
 
   swarm = AsyncSwarm(
     client=llm_client,
-    exponential_backoff=True,
+    exponential_backoff=False,
     retry_callback=retry_logging
   )
 

@@ -2766,7 +2766,7 @@ tqdm = "*"
 type = "git"
 url = "git@github.com:thisnick/swarm.git"
 reference = "HEAD"
-resolved_reference = "88c0d44abf5fc632e38bbbc3de477aab6038b676"
+resolved_reference = "27d4e041207590720465b7fc923810c3bdbd3f7a"
 
 [[package]]
 name = "tenacity"

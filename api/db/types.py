@@ -70,6 +70,7 @@ class Thread(TypedDict):
   user_id: str
   last_known_good_thread_state_id: Optional[str]
   thread_type: ThreadType
+  title: Optional[str]
 
 class ThreadState(TypedDict):
   thread_state_id: str

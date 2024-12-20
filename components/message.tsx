@@ -3,10 +3,11 @@
 import type { ChatRequestOptions, Message } from 'ai';
 import cx from 'classnames';
 import { motion } from 'motion/react';
-import { memo, useState, type Dispatch, type SetStateAction } from 'react';
+import { memo, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { AgentToolCall, AgentToolResult } from './agent-tool-call';
 
 
-// import type { UIBlock } from './block';
+import type { UIBlock } from './block';
 // import { DocumentToolCall, DocumentToolResult } from './document';
 import { SparklesIcon } from './icons';
 import { Markdown } from './markdown';
@@ -18,15 +19,14 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 const PurePreviewMessage = ({
   chatId,
   message,
-  // block,
-  // setBlock,
+  block,
+  setBlock,
 }: {
   chatId: string;
   message: Message;
-  // block: UIBlock;
-  // setBlock: Dispatch<SetStateAction<UIBlock>>;
+  block: UIBlock;
+  setBlock: Dispatch<SetStateAction<UIBlock>>;
 }) => {
-
   return (
     <motion.div
       className="w-full mx-auto max-w-3xl px-4 group/message"
@@ -45,32 +45,30 @@ const PurePreviewMessage = ({
           </div>
         )}
 
-        {message.content && (
-          <div className="flex flex-row gap-2 items-start">
-
-              <div
-                className={cn('flex flex-col gap-4', {
-                  'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
-                    message.role === 'user',
-                })}
-              >
-                <Markdown>{message.content as string}</Markdown>
-              </div>
+        <div className="flex flex-col gap-2 w-full">
+          {message.content && (
+            <div className="flex flex-row gap-2 items-start">
+              <Markdown className={
+              cn('max-w-none', {
+                'bg-primary text-primary-foreground px-3 py-2 rounded-xl':
+                  message.role === 'user',
+              })}
+            >
+                {message.content as string}
+              </Markdown>
             </div>
           )}
 
-        <div className="flex flex-col gap-2 w-full">
           {message.toolInvocations && message.toolInvocations.length > 0 && (
             <div className="flex flex-col gap-4">
               {message.toolInvocations.map((toolInvocation) => {
                 const { toolName, toolCallId, state, args } = toolInvocation;
 
                 if (state === 'result') {
-                  const { result } = toolInvocation;
 
                   return (
                     <div key={toolCallId}>
-                      {toolName}: {result}
+                      <AgentToolResult type={toolName} setBlock={setBlock} />
                     </div>
                   );
                 }
@@ -78,7 +76,7 @@ const PurePreviewMessage = ({
                   <div
                     key={toolCallId}
                   >
-                    {toolName}
+                    <AgentToolCall type={toolName} setBlock={setBlock} />
                   </div>
                 );
               })}

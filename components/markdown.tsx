@@ -1,102 +1,86 @@
-import Link from 'next/link';
-import React, { memo } from 'react';
-import ReactMarkdown, { type Components } from 'react-markdown';
+import React, { ReactNode, memo } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CodeBlock } from './code-block';
+import { visit } from 'unist-util-visit';
+import { Plugin, Transformer } from 'unified';
+import Link from "next/link";
+import { type Node } from 'unist';
 
-const NonMemoizedMarkdown = ({ children }: { children: string }) => {
-  const components: Partial<Components> = {
-    code: CodeBlock,
-    pre: ({ children }) => <>{children}</>,
-    ol: ({ node, children, ...props }) => {
-      return (
-        <ol className="list-decimal list-outside ml-4" {...props}>
-          {children}
-        </ol>
-      );
-    },
-    li: ({ node, children, ...props }) => {
-      return (
-        <li className="py-1" {...props}>
-          {children}
-        </li>
-      );
-    },
-    ul: ({ node, children, ...props }) => {
-      return (
-        <ul className="list-decimal list-outside ml-4" {...props}>
-          {children}
-        </ul>
-      );
-    },
-    strong: ({ node, children, ...props }) => {
-      return (
-        <span className="font-semibold" {...props}>
-          {children}
-        </span>
-      );
-    },
-    a: ({ node, children, ...props }) => {
-      return (
-        <Link
-          className="text-blue-500 hover:underline"
-          target="_blank"
-          rel="noreferrer"
-          {...props}
-        >
-          {children}
-        </Link>
-      );
-    },
-    h1: ({ node, children, ...props }) => {
-      return (
-        <h1 className="text-3xl font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h1>
-      );
-    },
-    h2: ({ node, children, ...props }) => {
-      return (
-        <h2 className="text-2xl font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h2>
-      );
-    },
-    h3: ({ node, children, ...props }) => {
-      return (
-        <h3 className="text-xl font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h3>
-      );
-    },
-    h4: ({ node, children, ...props }) => {
-      return (
-        <h4 className="text-lg font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h4>
-      );
-    },
-    h5: ({ node, children, ...props }) => {
-      return (
-        <h5 className="text-base font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h5>
-      );
-    },
-    h6: ({ node, children, ...props }) => {
-      return (
-        <h6 className="text-sm font-semibold mt-6 mb-2" {...props}>
-          {children}
-        </h6>
-      );
-    },
-  };
+const generateSlug = (str: string) => {
+  str = str?.replace(/^\s+|\s+$/g, '');
+  str = str?.toLowerCase();
+  const from = 'àáãäâèéëêìíïîòóöôùúüûñç·/_,:;';
+  const to = 'aaaaaeeeeiiiioooouuuunc------';
 
-  return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+  for (let i = 0, l = from.length; i < l; i++) {
+    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+  }
+
+  str = str
+    ?.replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
+  return str;
+};
+
+const getSlugFromNode = (node: ReactNode): string => {
+  if (typeof node === 'string') {
+    return generateSlug(node);
+  } else if (Array.isArray(node)) {
+    return node.map(getSlugFromNode).join('-');
+  } else if (React.isValidElement(node) && "props" in node && "children" in (node.props as any)) {
+    return getSlugFromNode((node.props as any).children);
+  } else {
+    return '';
+  }
+};
+
+export const components: Partial<Components> = {
+  a: ({ ...props }) => (
+    <Link
+      target={props.target || props.href?.startsWith("#") ? "_self" : "_blank"}
+      rel="noopener noreferrer"
+      href={props.href || "#"}
+      {...props}
+    />
+  ),
+  h1: ({ children, ...props }) => (
+    <h1 id={getSlugFromNode(children)} {...props}>
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }) => (
+    <h2 id={getSlugFromNode(children)} {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }) => (
+    <h3 id={getSlugFromNode(children)} {...props}>
+      {children}
+    </h3>
+  ),
+};
+
+interface MarkdownProps {
+  children: ReactNode;
+  className?: string;
+}
+
+const NonMemoizedMarkdown: React.FC<MarkdownProps> = ({ children, className }) => {
+  const content = typeof children === 'string' ? (
+    <ReactMarkdown
+      className={`prose dark:prose-invert prose-a:link prose-a:link-secondary prose-a:link-hover ${className}`}
+      remarkPlugins={[remarkGfm]}
+      components={components}
+    >
       {children}
     </ReactMarkdown>
+  ) : (
+    children
   );
+
+  return <>{content}</>;
 };
 
 export const Markdown = memo(

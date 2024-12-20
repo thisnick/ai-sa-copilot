@@ -45,15 +45,18 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     Arguments:
       requirements: List[str] | str - The user requirements to add (can be either a string or list of strings)
     """
-    # Convert string input to list if necessary
-    req_list = [requirements] if isinstance(requirements, str) else requirements
+    try:
+      # Convert string input to list if necessary
+      req_list = [requirements] if isinstance(requirements, str) else requirements
 
-    return AsyncResult(
-      value="Requirements added successfully",
-      context_variables={
-        "user_requirements": context_variables.get("user_requirements") or [] + req_list
-      }
-    )
+      return AsyncResult(
+        value="Requirements added successfully",
+        context_variables={
+          "user_requirements": context_variables.get("user_requirements") or [] + req_list
+        }
+      )
+    except Exception as e:
+      return AsyncResult(value=f"Error saving requirements: {e}")
 
   async def kickoff_research(context_variables: ContextVariables, topics: List[ResearchTopic]) -> AsyncResult:
     """Sets the research topics and kicks off the research agent
@@ -68,29 +71,32 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
       ]
     """
 
-    topic_list_adapter = TypeAdapter(List[ResearchTopic])
-    if isinstance(topics, str):
-      # Create a type adapter for List[ResearchTopic]
-      # Parse the JSON string into a list of ResearchTopic objects
-      topics = topic_list_adapter.validate_json(topics)
-    else:
-      topics = topic_list_adapter.validate_python(topics)
+    try:
+      topic_list_adapter = TypeAdapter(List[ResearchTopic])
+      if isinstance(topics, str):
+        # Create a type adapter for List[ResearchTopic]
+        # Parse the JSON string into a list of ResearchTopic objects
+        topics = topic_list_adapter.validate_json(topics)
+      else:
+        topics = topic_list_adapter.validate_python(topics)
 
 
-    if context_variables.get("debug", False):
-      print("topics", topics)
+      if context_variables.get("debug", False):
+        print("topics", topics)
 
-    from .topic_research_agent import create_topic_research_agent
+      from .topic_research_agent import create_topic_research_agent
 
-    research_agent = create_topic_research_agent(settings)
-    return AsyncResult(
-      value="Research kicked off",
-      agent=research_agent,
-      context_variables={
-        "research_topics": topics,
-        "current_research_topic": 0
-      }
-    )
+      research_agent = create_topic_research_agent(settings)
+      return AsyncResult(
+        value="Research kicked off",
+        agent=research_agent,
+        context_variables={
+          "research_topics": topics,
+          "current_research_topic": 0
+        }
+      )
+    except Exception as e:
+      return AsyncResult(value=f"Error kicking off research: {e}")
 
   return AsyncAgent(
     name=AGENT_RESEARCH_COORDINATOR,

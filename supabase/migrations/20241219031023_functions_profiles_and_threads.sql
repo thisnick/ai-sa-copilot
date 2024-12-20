@@ -29,7 +29,8 @@ create table "public"."threads" (
     "created_at" timestamp with time zone not null default now(),
     "user_id" uuid not null,
     "last_known_good_thread_state_id" uuid,
-    "thread_type" enum_thread_type not null
+    "thread_type" enum_thread_type not null,
+    "title" text
 );
 
 
@@ -100,7 +101,7 @@ SELECT a.artifact_id,
         (
             SELECT jsonb_agg(outbound)
             FROM (
-                    SELECT jsonb_build_object(
+                    SELECT DISTINCT ON (al.target_url) jsonb_build_object(
                             'artifact_id',
                             target.artifact_id,
                             'url',
@@ -113,6 +114,7 @@ SELECT a.artifact_id,
                     FROM artifact_links al
                         LEFT JOIN artifacts target ON al.target_url = target.url
                     WHERE al.source_artifact_id = a.artifact_id
+                    ORDER BY al.target_url
                     LIMIT max_links
                 ) AS outbound_links
         ),
@@ -122,7 +124,7 @@ SELECT a.artifact_id,
         (
             SELECT jsonb_agg(inbound)
             FROM (
-                    SELECT jsonb_build_object(
+                    SELECT DISTINCT ON (il.source_artifact_id) jsonb_build_object(
                             'artifact_id',
                             il.source_artifact_id,
                             'url',
@@ -135,6 +137,7 @@ SELECT a.artifact_id,
                     FROM artifact_links il
                         LEFT JOIN artifacts source ON il.source_artifact_id = source.artifact_id
                     WHERE il.target_url = a.url
+                    ORDER BY il.source_artifact_id
                     LIMIT max_links
                 ) AS inbound_links
         ),
@@ -157,16 +160,16 @@ BEGIN
         cs.member_count,
         ac.iteration,
         cs.summary
-    FROM
+    FROM 
         public.artifact_clusters ac
-    JOIN
+    JOIN 
         public.artifacts a ON ac.cluster_id = a.artifact_id
-    LEFT OUTER JOIN
+    LEFT OUTER JOIN 
         public.cluster_summaries cs ON ac.cluster_id = cs.cluster_id AND ac.iteration = cs.iteration
-    WHERE
+    WHERE 
         a.domain_id = target_domain_id
         AND ac.is_intermediate = false
-    ORDER BY
+    ORDER BY 
         member_count DESC;
 END;
 $function$

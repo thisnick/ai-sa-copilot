@@ -1,232 +1,248 @@
-## Prerequisites
+## Sign Up for Databricks
 
 ### Goals
-Ensure all necessary requirements and permissions are in place before starting the Databricks deployment on AWS. This preparation will help avoid deployment issues and ensure a smooth setup process.
+
+This section aims to guide you through setting up a Databricks account, allowing you to be prepared for creating and managing a workspace on AWS.
 
 ### High-level Steps
-1. Verify AWS account permissions and access
-2. Check AWS service quotas
-3. Ensure Databricks account access
 
-### Step 1: Verify AWS Account Permissions and Access
+1. Create an AWS account (if not already available)
+2. Choose a sign-up method: via Databricks directly or through AWS Marketplace.
+3. Follow the sign-up process specific to the method chosen (email verification, creating passwords, etc.).
+4. Manage billing options during or post-trial if required.
 
-You need permissions in your AWS account to:
-- Provision IAM roles
-- Create and manage S3 buckets
-- Deploy CloudFormation stacks
+### Step 1: Create an AWS Account
 
-Ensure you have administrator access or the necessary IAM permissions to perform these actions.
+1. Navigate to the [AWS website](https://aws.amazon.com/).
+2. Follow the instructions to sign up for a new account if you do not already have one. This step is necessary as Databricks requires compute and storage resources from your AWS account.
 
-### Step 2: Check AWS Service Quotas
+### Step 2: Choose a Sign-Up Method
 
-Before deployment, verify you have available service quotas in your chosen AWS region for:
-1. VPC (Virtual Private Cloud)
-2. NAT gateway
+- **Through Databricks Directly:**
+  1. Visit the [Try Databricks](https://databricks.com/try-databricks) page.
+  2. Enter your name, company, email, and title, then click **Continue**.
+  3. Select **Amazon Web Services** as your cloud provider and click **Get started**.
+  4. Verify your email address through the link sent to you.
+  5. Proceed to create your workspace from the Databricks account console.
 
-To check your quotas:
-1. Navigate to the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/home)
-2. Review your VPC and NAT gateway limits
-3. If needed, request quota increases through the AWS console
+- **Through AWS Marketplace:**
+  1. Log in to your AWS account with Purchaser role access.
+  2. Navigate to [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-wtyi5lgtce6n6).
+  3. Select **View purchase options** then click **Subscribe**.
+  4. Complete the email verification process and set your password to access Databricks account console.
 
-### Step 3: Ensure Databricks Account Access
+### Step 3: Manage Billing Options
 
-You need:
-1. A Databricks account (sign up for a free trial if you don't have one)
-2. Account administrator permissions on Databricks
-3. Email verification completed for your Databricks account
+- For **Direct Databricks signup**, add billing information to maintain account utility post-trial. This involves:
+  1. Logging in to the account console and accessing **Subscription & Billing** under settings.
+  2. Adding and saving your billing information.
+- For **AWS Marketplace**, billing is managed alongside your AWS charges post-trial.
 
-Note: If you decide to cancel your Databricks subscription later, remember to delete all associated resources from your AWS console to prevent continued costs.
+References:
+- [Start a Databricks free trial](https://databricks.com/try-databricks)
+- [AWS website](https://aws.amazon.com/)
+
+## Set Up Databricks Workspace
+
+### Goals
+
+The aim of this section is to help establish a Databricks workspace on AWS, ensuring that you have a ready environment for data processing and analytics.
+
+### High-level Steps
+
+1. Verify necessary permissions in AWS (IAM roles, S3 buckets, VPC, NAT gateway).
+2. Initiate workspace setup in chosen AWS region using AWS CloudFormation.
+3. Name the workspace and complete stack creation through AWS console.
+
+### Step 1: Verify Necessary Permissions in AWS
+
+1. Ensure that you have the permission to provision IAM roles and S3 buckets in your AWS account.
+2. Check that you have available service quotas for a Databricks deployment in your AWS region, including a Virtual Private Cloud (VPC) and a Network Address Translation (NAT) gateway.
+
+### Step 2: Initiate Workspace Setup
+
+1. Sign into your Databricks account.
+2. Follow the instructions provided in the Databricks account console to set up your workspace.
+3. Select the AWS region for the deployment and ensure necessary network configurations are available.
+
+### Step 3: Complete Workspace Creation
+
+1. Click **Start Quickstart** to open the AWS Console with a prepopulated CloudFormation template.
+2. Check "I acknowledge that AWS CloudFormation might create IAM resources with custom names."
+3. Click **Create stack** to begin the setup.
+4. Return to the Databricks account console and wait for the workspace to finish deploying.
+
+### Troubleshooting
+
+- If deployment fails, refrain from editing additional fields in the CloudFormation template.
+- For additional support, contact [onboarding-help@databricks.com](mailto:onboarding-help@databricks.com).
 
 References:
 - [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
 
-## Step 1: Create Databricks Workspace
+## Create Compute Resources
 
 ### Goals
-Deploy your first Databricks workspace on AWS using the quickstart method, which streamlines the process by automatically provisioning required cloud resources.
+
+The goal of this section is to guide you in creating a compute resource, specifically a serverless SQL warehouse, which will allow you to run queries efficiently.
 
 ### High-level Steps
-1. Log into Databricks account and start workspace creation
-2. Configure basic workspace settings
-3. Deploy AWS resources
-4. Verify deployment completion
 
-### Step 1: Log into Databricks Account
+1. Open Databricks workspace.
+2. Navigate to SQL Warehouses.
+3. Create SQL Warehouse and set permissions for access.
 
-1. Sign into your Databricks account at [accounts.cloud.databricks.com](https://accounts.cloud.databricks.com)
-2. If this is your first time, you'll be automatically guided to the workspace creation flow
-3. If not, click on "Create Workspace" to begin
+### Step 1: Open Databricks Workspace
 
-### Step 2: Configure Workspace Settings
+1. Go to your Databricks account and log in.
+2. Access your previously set up Databricks workspace.
 
-1. Enter a human-readable name for your workspace
-   - This name cannot be changed later
-   - Choose something descriptive that identifies the workspace's purpose
+### Step 2: Navigate to SQL Warehouses
 
-2. Select your AWS region
-   - Choose a region where you have verified your service quotas
-   - Ensure the region complies with your data residency requirements
+1. Once in the workspace interface, locate the sidebar menu.
+2. Click on **SQL Warehouses** to go to the SQL management area.
 
-### Step 3: Deploy AWS Resources
+### Step 3: Create SQL Warehouse
 
-1. Click "Start Quickstart" to begin the deployment
-   - This will open your AWS Console with a pre-populated CloudFormation template
+1. Click the **Create SQL Warehouse** button.
+2. Provide a name for your SQL warehouse to identify it easily.
+3. Click **Create** to establish the SQL warehouse.
 
-2. In the AWS Console:
-   - Review the template parameters (avoid editing to prevent deployment failures)
-   - Check the box that says "I acknowledge that AWS CloudFormation might create IAM resources with custom names"
-   - Click "Create stack"
+### Step 4: Set Permissions
 
-### Step 4: Verify Deployment
-
-1. Return to the Databricks account console
-2. Wait for the workspace deployment to complete
-   - This typically takes a few minutes
-   - The status will update automatically
-
-3. Once complete, you can click on the workspace name to access it
-
-Note: If you encounter any deployment errors, contact Databricks support at onboarding-help@databricks.com for troubleshooting assistance.
-
-References:
-- [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
-- [Create a workspace](https://docs.databricks.com/en/admin/workspace/index.html)
-
-## Step 2: Set Up Compute Resources
-
-### Goals
-Create a serverless SQL warehouse that will serve as the compute resource for running SQL queries and data processing tasks in your Databricks workspace.
-
-### High-level Steps
-1. Navigate to SQL Warehouses section
-2. Create new SQL warehouse
-3. Configure warehouse settings
-4. Set up access permissions
-
-### Step 1: Navigate to SQL Warehouses
-
-1. Open your newly created Databricks workspace
-2. In the sidebar menu, click on "SQL Warehouses"
-3. This will take you to the compute resources management page
-
-### Step 2: Create SQL Warehouse
-
-1. Click the "Create SQL warehouse" button
-2. Enter a descriptive name for your warehouse
-   - Choose a name that reflects its intended use
-   - The name can be changed later if needed
-3. Keep the default settings for basic setup
-4. Click "Create"
-
-### Step 3: Configure Access Permissions
-
-1. When prompted in the permissions modal:
-   - Enter and select "All Users" in the field
-   - Click "Add" to grant access
-2. This ensures all workspace users can utilize this compute resource
-
-Note: While Databricks does not charge during the free trial period, AWS will charge for the compute resources that Databricks deploys in your linked AWS account.
-
-Your serverless SQL warehouse should be available immediately for running queries after creation.
+1. After creating the warehouse, a permissions modal will appear.
+2. Enter `All Users` into the permission field, then click **Add**.
+3. Confirm that your SQL warehouse is operational and available for SQL queries.
 
 References:
 - [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
 
-## Step 3: Configure Data Access
+## Connect to Data Sources
 
 ### Goals
-Connect your Databricks workspace to your data sources by creating and configuring external locations for secure data access.
+
+In this section, the focus is on establishing a connection between the Databricks workspace and your data storage sources in AWS, specifically using Amazon S3.
 
 ### High-level Steps
-1. Create external location for S3 access
-2. Generate access token and configure AWS
-3. Test connection
-4. Verify access
 
-### Step 1: Create External Location
+1. Navigate to Databricks Catalog.
+2. Create an external location using AWS Quickstart for S3.
+3. Test connection to ensure proper setup.
 
-1. Click "Catalog" on the workspace sidebar
-2. Click "+ Add" at the top of the page
-3. Select "Add an external location"
-4. Choose "AWS Quickstart" (recommended method)
-5. Enter your S3 bucket name in the "Bucket Name" field
+### Step 1: Navigate to Databricks Catalog
 
-### Step 2: Configure AWS Access
+1. In your Databricks workspace, click **Catalog** on the sidebar.
 
-1. Click "Generate New Token" and copy the generated token
-2. Click "Launch in Quickstart"
-3. In the AWS console:
-   - Paste the copied token in the "Databricks Personal Access Token" field
-   - Select the acknowledgment checkbox for IAM resource creation
-   - Click "Create stack"
+### Step 2: Create an External Location
 
-### Step 3: Test Connection
+1. At the top of the page, click **+ Add**.
+2. Click **Add an external location**.
+3. Use **AWS Quickstart** to ensure that your workspace is given the correct permissions on the S3 bucket.
+4. Enter the bucket name from which you want to import data.
+5. Click **Generate New Token** and copy the token.
+6. Click **Launch in Quickstart**.
+7. Enter the copied token in the **Databricks Personal Access Token** field in your AWS console.
+8. Check the option "I acknowledge that AWS CloudFormation might create IAM resources with custom names."
+9. Click **Create stack**.
 
-1. Return to your Databricks workspace
-2. Navigate to "Catalog" in the sidebar
-3. Click "External Data" at the bottom of the left navigation
-4. Click "External Locations"
-5. Find your new external location (named `db_s3_external_databricks-S3-ingest-<id>`)
-6. Click on the location and select "Test connection"
+### Step 3: Test Your Connection
 
-### Notes
-- Your workspace comes with a default external location that connects to the S3 bucket provisioned with your workspace
-- The external location name follows the format: `db_s3_external_databricks-S3-ingest-<id>`
-- Always test connections after setup to ensure proper configuration
+1. Navigate back to the external locations in your workspace.
+2. Click on the external location you've set up.
+3. Click **Test connection** to ensure the setup works.
 
 References:
 - [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
 
-## Step 4: Manage Users and Permissions
+## Add Users and Set Permissions
 
 ### Goals
-Add users to your Databricks workspace and configure appropriate access permissions to ensure secure and controlled access to resources.
+
+This section focuses on allowing multiple users to access and work within the Databricks workspace by adding them and setting their permissions according to roles and needs.
 
 ### High-level Steps
-1. Access workspace settings
-2. Add users to workspace
-3. Configure user permissions
-4. Set up data access privileges
 
-### Step 1: Access Workspace Settings
+1. Add users to Databricks workspace from settings.
+2. Set permissions according to user roles and needs.
 
-1. In the top bar of your Databricks workspace, click your username
-2. Select "Settings" from the dropdown menu
-3. Click "Identity and access" in the sidebar
+### Step 1: Add Users
 
-### Step 2: Add Users to Workspace
+1. In the top bar of the Databricks workspace, click your username and then click **Settings**.
+2. In the sidebar, click **Identity and access**.
+3. Next to **Users**, click **Manage**.
+4. Click **Add user**, and then click **Add new**.
+5. Enter the user’s email address, and then click **Add**.
 
-1. Next to "Users", click "Manage"
-2. Click "Add user", then "Add new"
-3. Enter the user's email address
-4. Click "Add" to send an invitation
-   - New users will receive an email to set up their account
-   - They must verify their email address before accessing the workspace
+### Step 2: Set Permissions
 
-### Step 3: Configure User Permissions
-
-1. Remember these key permission concepts:
-   - Permissions are hierarchical and inherited downward
-   - Users need both `SELECT` and `USE` permissions for data access
-   - Grant minimum required permissions following the principle of least privilege
-
-2. Common permission considerations:
-   - For data access: grant `SELECT` on specific schemas or tables
-   - For external data sources: grant `CREATE EXTERNAL LOCATION` and `CREATE STORAGE CREDENTIAL`
-   - For compute resources: ensure access to required SQL warehouses
-
-### Step 4: Grant Data Access Privileges
-
-1. Navigate to "Catalog" in the sidebar
-2. Select the catalog, schema, or table to manage
-3. Click "Permissions"
-4. Add users or groups and assign appropriate privileges:
-   - `USE` for accessing catalogs and schemas
-   - `SELECT` for reading data
-   - Additional privileges based on user roles and needs
-
-Note: The security model is hierarchical - granting privileges at a higher level (catalog or schema) automatically grants those privileges to all current and future objects within that level.
+1. Once users are added, define the permissions that meet your organization’s data governance policy.
+2. Common permissions include:
+   - Granting users `SELECT` permissions on catalogs or schemas.
+   - Setting `USE` permissions on the objects for accessing specific data.
+   - Granting `CREATE EXTERNAL LOCATION` for connection to external data sources.
+3. Ensure permissions are cascaded properly if assigning to higher-level objects such as catalogs and schemas.
 
 References:
 - [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
-- [Unity Catalog privileges and securable objects](https://docs.databricks.com/en/data-governance/unity-catalog/manage-privileges/privileges.html)
+
+## Install Databricks CLI
+
+### Goals
+
+The objective of this section is to provide guidance on setting up the Databricks Command-Line Interface (CLI), which facilitates advanced management and automation options for your Databricks environment.
+
+### High-level Steps
+
+1. Choose installation method: Homebrew, WinGet, or Source.
+2. Follow the appropriate installation steps for your operating system.
+3. Authenticate CLI using Databricks account details.
+
+### Step 1: Choose Installation Method
+Databricks CLI can be installed using several methods depending on your operating system:
+
+- **Homebrew (Linux/MacOS):**
+  1. Install Homebrew if not already installed:
+     ```bash
+     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+     ```
+  2. Tap the Databricks repo and install:
+     ```bash
+     brew tap databricks/tap
+     brew install databricks
+     ```
+- **WinGet or Chocolatey (Windows):**
+  1. Use WinGet:
+     ```bash
+     winget install Databricks.DatabricksCLI
+     ```
+  2. Alternatively, use Chocolatey:
+     ```bash
+     choco install databricks-cli
+     ```
+- **Source (Linux/MacOS/Windows):**
+  1. Download the `.zip` file from the [Databricks CLI's GitHub Releases](https://github.com/databricks/cli/releases).
+  2. Extract and move the executable to a directory included in your `PATH`.
+
+### Step 2: Verify Installation
+
+1. Open your command prompt or terminal.
+2. Execute `databricks -v` or `databricks version` to ensure the correct installation:
+   ```bash
+   databricks -v
+   # Or:
+   databricks version
+   ```
+   - If the version number is 0.205.0 or higher, the installation is valid.
+
+### Step 3: Authenticate CLI
+
+The final step is to authenticate the Databricks CLI:
+
+1. Run the authentication command:
+   ```bash
+   databricks configure --token
+   ```
+2. Enter your Databricks host URL and your personal access token when prompted.
+
+References:
+- [Databricks CLI Installation Guide](https://docs.databricks.com/en/dev-tools/cli/install.html)

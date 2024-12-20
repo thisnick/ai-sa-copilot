@@ -62,7 +62,8 @@ async def get_thread_data(
     thread_state = thread.get('state') or {}
     agent_name = thread_state.get("agent_name")
     messages = thread_state.get("messages", [])
-    context_variables = thread_state.get("context_variables", {})
+    context_variables_adapter = TypeAdapter(ContextVariables)
+    context_variables = context_variables_adapter.validate_python(thread_state.get("context_variables", {}))
     thread_id = thread.get("thread_id")
 
   context_variables["domain_id"] = domain_id
@@ -76,87 +77,134 @@ async def generate_stream(
   supabase = get_supabase_client_from_context()
   async for chunk in swarm_response:
     if "sender" in chunk:
-      chunk = cast(AsyncMessageStreamingChunk, chunk)
-      data = [{"sender": chunk["sender"]}]
-
-      # annotations
-      yield f"8:{json.dumps(data)}\n"
+      yield await handle_sender_chunk(cast(AsyncMessageStreamingChunk, chunk))
 
     if "content" in chunk and cast(AsyncMessageStreamingChunk, chunk)["content"] is not None:
-      chunk = cast(AsyncMessageStreamingChunk, chunk)
-      if chunk["content"]:
-        # text
-        yield f"0:{json.dumps(str(chunk['content']))}\n"
+      yield await handle_content_chunk(cast(AsyncMessageStreamingChunk, chunk))
 
     if "tool_calls" in chunk and cast(AsyncMessageStreamingChunk, chunk)["tool_calls"] is not None:
-      for tool_call in cast(AsyncMessageStreamingChunk, chunk)["tool_calls"]:
-        f = tool_call["function"]
-        name = f["name"]
-        if not name:
-          continue
-        tool_call_data = { "toolCallId": tool_call["id"], "toolName": name }
-
-        # tool call
-        yield f"9:{json.dumps(tool_call_data)}\n"
-
-    if "delim" in chunk and cast(AsyncDelimStreamingChunk, chunk)["delim"] == "end":
-      # end step
-      step_data = { "finishReason": "stop", "isContinued": False }
-      yield f"e:{json.dumps(step_data)}\n"
+      async for yield_data in handle_tool_calls_chunk(cast(AsyncMessageStreamingChunk, chunk)):
+        yield yield_data
 
     if "partial_response" in chunk:
-      chunk = cast(AsyncDeltaResponseStreamingChunk, chunk)
-      await (
-        supabase.table("thread_states").insert({
-          "thread_id": thread_id,
-          "messages": chunk["partial_response"].messages,
-          "context_variables": context_variables_update_dict,
-          "agent_name": chunk["partial_response"].agent.name if chunk["partial_response"].agent else None
-        })
-        .execute()
-      )
-      messages = chunk["partial_response"].messages
-      for message in messages:
-        if message['role'] == 'tool':
-          tool_result_data = {
-            'toolCallId': message["tool_call_id"],
-            "result": message["content"]
-          }
-          yield f"a:{json.dumps(tool_result_data)}\n"
-
-      context_variables_update_dict = json.loads(json.dumps(chunk["partial_response"].context_variables, default=pydantic_encoder))
-
-      yield f"2:{json.dumps([{
-        "type": "context_update",
-        'context_variables': context_variables_update_dict
-      }])}"
+      async for yield_data in handle_partial_response_chunk(cast(AsyncDeltaResponseStreamingChunk, chunk), thread_id, supabase):
+        yield yield_data
 
     if "response" in chunk:
-      chunk = cast(AsyncResponseStreamingChunk, chunk)
+      await handle_final_response_chunk(cast(AsyncResponseStreamingChunk, chunk), thread_id, messages, supabase)
 
-      insert_state_response = await (
-        supabase.table("thread_states").insert({
-          "thread_id": thread_id,
-          "messages": messages + chunk["response"].messages,
-          "context_variables": json.loads(json.dumps(chunk["response"].context_variables, default=pydantic_encoder)),
-          "agent_name": chunk["response"].agent.name if chunk["response"].agent else None
-        })
-        .execute()
-      )
-      assert insert_state_response.data is not None and len(insert_state_response.data) > 0, "Failed to insert thread state"
+  yield f"d:{json.dumps({ 'finishReason': 'stop' })}\n"
 
-      last_known_good_thread_state_id = insert_state_response.data[0]["thread_state_id"]
-      await (
-        supabase.table("threads").update({
-          "last_known_good_thread_state_id": last_known_good_thread_state_id
-        })
-        .eq("thread_id", thread_id)
-        .execute()
-      )
+async def handle_sender_chunk(chunk: AsyncMessageStreamingChunk) -> str:
+  data = [{"sender": chunk["sender"]}]
+  return f"8:{json.dumps(data)}\n"
 
-  response_data = { "finishReason": "stop" }
-  # end message
-  yield f"d:{json.dumps(response_data)}\n"
+async def handle_content_chunk(chunk: AsyncMessageStreamingChunk) -> str:
+  chunk = cast(AsyncMessageStreamingChunk, chunk)
+  if chunk["content"]:
+    return f"0:{json.dumps(str(chunk['content']))}\n"
+  return ""
+
+async def handle_tool_calls_chunk(chunk: AsyncMessageStreamingChunk) -> AsyncGenerator[str, None]:
+  for tool_call in cast(AsyncMessageStreamingChunk, chunk)["tool_calls"]:
+    f = tool_call["function"]
+    name = f["name"]
+    if not name:
+      continue
+    tool_call_data = {
+      "toolCallId": tool_call["id"],
+      "toolName": name,
+      "args": {}
+    }
+    yield f"9:{json.dumps(tool_call_data)}\n"
+
+async def handle_partial_response_chunk(
+  chunk: AsyncDeltaResponseStreamingChunk,
+  thread_id: str,
+  supabase: AsyncClient
+) -> AsyncGenerator[str, None]:
+  chunk = cast(AsyncDeltaResponseStreamingChunk, chunk)
+  response = chunk["partial_response"]
+  context_variables_update = cast(ContextVariables, response.context_variables)
+  context_variables_update_dict = json.loads(json.dumps(context_variables_update, default=pydantic_encoder))
+
+  await save_thread_state(
+    supabase,
+    thread_id,
+    response.messages,
+    context_variables_update_dict,
+    response.agent.name if response.agent else None
+  )
+
+  # Handle title updates if needed
+  if len(context_variables_update.get("user_requirements") or []) > 0:
+    title = (context_variables_update.get("user_requirements") or [])[0]
+    await (
+      supabase.table("threads").update({
+        "title": title
+      })
+      .eq("thread_id", thread_id)
+      .execute()
+    )
+
+    yield f"2:{json.dumps([{'type': 'thread_title', 'content': title}])}\n"
+
+  # Handle tool results
+  for message in response.messages:
+    if message['role'] == 'tool':
+      yield f"a:{json.dumps({'toolCallId': message['tool_call_id'], 'result': message['content']})}\n"
+
+  # Yield step data
+  yield f"e:{json.dumps({'finishReason': 'stop', 'isContinued': False})}\n"
+
+  # Yield context update
+  yield f"2:{json.dumps([{
+    'type': 'context_delta',
+    'content': context_variables_update_dict
+  }])}\n"
+
+async def handle_final_response_chunk(
+  chunk: AsyncResponseStreamingChunk,
+  thread_id: str,
+  messages: List[Message],
+  supabase: AsyncClient
+) -> None:
+  chunk = cast(AsyncResponseStreamingChunk, chunk)
+  insert_state_response = await save_thread_state(
+    supabase,
+    thread_id,
+    messages + chunk["response"].messages,
+    json.loads(json.dumps(chunk["response"].context_variables, default=pydantic_encoder)),
+    chunk["response"].agent.name if chunk["response"].agent else None
+  )
+
+  assert insert_state_response.data is not None and len(insert_state_response.data) > 0, "Failed to insert thread state"
+
+  last_known_good_thread_state_id = insert_state_response.data[0]["thread_state_id"]
+  await (
+    supabase.table("threads").update({
+      "last_known_good_thread_state_id": last_known_good_thread_state_id
+    })
+    .eq("thread_id", thread_id)
+    .execute()
+  )
+
+async def save_thread_state(
+  supabase: AsyncClient,
+  thread_id: str,
+  messages: List[Message],
+  context_variables: Dict[str, Any],
+  agent_name: Optional[str]
+) -> Any:
+  return await (
+    supabase.table("thread_states").insert({
+      "thread_id": thread_id,
+      "messages": messages,
+      "context_variables": context_variables,
+      "agent_name": agent_name
+    })
+    .execute()
+  )
 
 @router.post("/chat")
 async def stream_messages(
@@ -192,12 +240,8 @@ async def stream_messages(
 
   return StreamingResponse(
     generate_stream(swarm_response, thread_id, messages),
-    media_type="text/event-stream",
     headers={
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-      "x-vercel-ai-data-stream": "v1"
+      "x-vercel-ai-data-stream": "v1",
     }
   )
 

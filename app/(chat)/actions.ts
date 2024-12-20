@@ -2,6 +2,7 @@ import { convertToUIMessages } from "@/lib/api/utils";
 import { createClient } from "@/lib/supabase/server";
 import type { DBMessage, ContextVariables } from "@/lib/api/types";
 import { Tables } from "@/lib/supabase/database.types";
+import { notFound } from "next/navigation";
 
 export async function getThreadState(threadId: string) {
   const supabase = await createClient();
@@ -19,10 +20,8 @@ export async function getThreadState(threadId: string) {
     .limit(1)
     .maybeSingle();
 
-  console.log("thread", thread);
-
   if (threadStateError) {
-    throw new Error("Thread state not found");
+    return notFound();
   }
 
   if (!thread) {
@@ -33,7 +32,7 @@ export async function getThreadState(threadId: string) {
 
   const messages = convertToUIMessages(threadState?.messages as Array<DBMessage> || []);
 
-  const context = thread.state[0]?.context_variables as ContextVariables;
+  const context = threadState.context_variables as ContextVariables;
 
   return {
     messages,

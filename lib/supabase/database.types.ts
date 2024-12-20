@@ -272,6 +272,7 @@ export type Database = {
           last_known_good_thread_state_id: string | null
           thread_id: string
           thread_type: Database["public"]["Enums"]["enum_thread_type"]
+          title: string | null
           user_id: string
         }
         Insert: {
@@ -279,6 +280,7 @@ export type Database = {
           last_known_good_thread_state_id?: string | null
           thread_id?: string
           thread_type: Database["public"]["Enums"]["enum_thread_type"]
+          title?: string | null
           user_id: string
         }
         Update: {
@@ -286,6 +288,7 @@ export type Database = {
           last_known_good_thread_state_id?: string | null
           thread_id?: string
           thread_type?: Database["public"]["Enums"]["enum_thread_type"]
+          title?: string | null
           user_id?: string
         }
         Relationships: [

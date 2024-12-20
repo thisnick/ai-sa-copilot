@@ -3,7 +3,7 @@
 import type { Attachment, Message } from 'ai';
 import { useChat } from 'ai/react';
 import { AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import { useWindowSize } from 'usehooks-ts';
 
@@ -15,15 +15,20 @@ import { ChatInput } from './chat-input';
 import { Messages } from './messages';
 import { ProfileContext } from './profile-context';
 import { useContext } from 'react';
+import { Block, UIBlock } from './block';
+import { ContextVariables } from '@/lib/api/types';
+import { BlockStreamHandler } from './block-stream-handler';
 
 export function Chat({
   id,
   domainId,
   initialMessages,
+  initialContext,
 }: {
   id: string;
   domainId: string;
   initialMessages: Array<Message>;
+  initialContext: ContextVariables;
 }) {
   const { mutate } = useSWRConfig();
   const { accessToken } = useContext(ProfileContext);
@@ -41,16 +46,11 @@ export function Chat({
   } = useChat({
     api: '/api/chat/chat',
     id,
-    fetch: async (url, options) => {
-      return fetch(url, {
-        ...options,
-        headers: {
-          ...options?.headers,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
     },
     initialMessages,
+    sendExtraMessageFields: true,
     experimental_prepareRequestBody: ({messages}) => ({
       message: messages[messages.length - 1].content,
       thread_id: id,
@@ -61,23 +61,23 @@ export function Chat({
     },
   });
 
+  const [title, setTitle] = useState('');
+
   const { width: windowWidth = 1920, height: windowHeight = 1080 } =
     useWindowSize();
 
-  // const [block, setBlock] = useState<UIBlock>({
-  //   documentId: 'init',
-  //   content: '',
-  //   kind: 'text',
-  //   title: '',
-  //   status: 'idle',
-  //   isVisible: false,
-  //   boundingBox: {
-  //     top: windowHeight / 4,
-  //     left: windowWidth / 4,
-  //     width: 250,
-  //     height: 50,
-  //   },
-  // });
+  const [block, setBlock] = useState<UIBlock>({
+    context: initialContext,
+    activeTab: 'document',
+    status: 'idle',
+    isVisible: false,
+    boundingBox: {
+      top: windowHeight / 4,
+      left: windowWidth / 4,
+      width: 250,
+      height: 50,
+    },
+  });
 
   return (
     <>
@@ -88,8 +88,8 @@ export function Chat({
 
         <Messages
           chatId={id}
-          // block={block}
-          // setBlock={setBlock}
+          block={block}
+          setBlock={setBlock}
           isLoading={isLoading}
           messages={messages}
           setMessages={setMessages}
@@ -111,7 +111,7 @@ export function Chat({
         </form>
       </div>
 
-      {/* <AnimatePresence>
+      <AnimatePresence>
         {block?.isVisible && (
           <Block
             chatId={id}
@@ -120,8 +120,6 @@ export function Chat({
             handleSubmit={handleSubmit}
             isLoading={isLoading}
             stop={stop}
-            attachments={attachments}
-            setAttachments={setAttachments}
             append={append}
             block={block}
             setBlock={setBlock}
@@ -130,9 +128,9 @@ export function Chat({
             reload={reload}
           />
         )}
-      </AnimatePresence> */}
+      </AnimatePresence>
 
-      {/* <BlockStreamHandler streamingData={streamingData} setBlock={setBlock} /> */}
+      <BlockStreamHandler streamingData={streamingData} setBlock={setBlock} setTitle={setTitle} />
     </>
   );
 }

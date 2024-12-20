@@ -20,6 +20,7 @@ export type DBMessage = {
   role: "assistant"
   content: DBMessageContent
   tool_calls?: Array<DBMessageToolCall>
+  sender: string
 } | {
   role: "tool"
   content: string | object
