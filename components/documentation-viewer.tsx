@@ -49,16 +49,14 @@ function Article({ artifact }: { artifact: ArtifactWithLinks }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-start justify-between gap-4">
-          <span>{artifact.title}</span>
+        <CardTitle className="flex items-start justify-between gap-4 text-lg">
           <Link
             href={artifact.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary shrink-0"
+            className="text-muted-foreground hover:text-primary text-base"
           >
-            Visit Article
-            <ExternalLink className="h-3 w-3" />
+            {artifact.title}
           </Link>
         </CardTitle>
         <CardDescription>{artifact.summary}</CardDescription>
@@ -84,9 +82,9 @@ export function DocumentationViewer({ savedArtifacts }: DocumentationViewerProps
   return (
     <ScrollArea className="h-[calc(100vh-9rem)]">
       <div className="p-4">
-        <Accordion type="multiple" className="grid gap-4">
-          {Object.entries(savedArtifacts).map(([topic, artifacts]) => (
-            <AccordionItem key={topic} value={topic} className="border-none">
+        <Accordion type="multiple" className="grid gap-4" defaultValue={[Object.keys(savedArtifacts)[0]]}>
+          {Object.entries(savedArtifacts).map(([topic, artifacts], index) => (
+            <AccordionItem key={index} value={topic} className="border-none">
               <AccordionTrigger className="rounded-lg border px-4 py-2 hover:bg-muted/50 hover:no-underline [&[data-state=open]]:rounded-b-none">
                 {topic}
               </AccordionTrigger>
