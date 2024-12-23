@@ -75,9 +75,16 @@ async def generate_stream(
   messages: List[Message],
 ) -> AsyncGenerator[str, None]:
   supabase = get_supabase_client_from_context()
+  last_sender = None
   async for chunk in swarm_response:
+    if "delim" in chunk:
+      last_sender = None
+
     if "sender" in chunk:
-      yield await handle_sender_chunk(cast(AsyncMessageStreamingChunk, chunk))
+      new_sender = await handle_sender_chunk(cast(AsyncMessageStreamingChunk, chunk))
+      if new_sender != last_sender:
+        yield new_sender
+        last_sender = new_sender
 
     if "content" in chunk and cast(AsyncMessageStreamingChunk, chunk)["content"] is not None:
       yield await handle_content_chunk(cast(AsyncMessageStreamingChunk, chunk))

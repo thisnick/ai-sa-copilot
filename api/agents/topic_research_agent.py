@@ -53,14 +53,14 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     Never answer the user directly. Instead, you should do the research and use `finish_research`
     when you are done researching. The downstream agents will handle answering the user question.
 
-    Research topic:
+    Current topic to research:
     {formatted_topic}
+
+    Remaining topics not yet researched:
+    {len(topics) - current_topic_idx - 1}
 
     Knowledge topics:
     {formatted_knowledge_topics}
-
-    Remaining topics to research:
-    {len(topics) - current_topic_idx - 1}
 
     """
 
@@ -90,9 +90,12 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
         artifact_ids = json.loads(artifact_ids)
 
       artifacts = await async_get_artifacts(artifact_ids, with_links=True)
+      current_topic_idx = context_variables.get("current_research_topic") or 0
+      current_topic = (context_variables.get("research_topics") or [])[current_topic_idx]
+      remaining_topics = (context_variables.get("research_topics") or [])[current_topic_idx + 1:]
 
       return AsyncResult(
-        value="Artifacts saved successfully",
+        value=f"Artifacts saved successfully for research topic: {current_topic.research_question}. {len(remaining_topics)} research topics remaining.",
         context_variables={
           "saved_artifacts": {
             **(context_variables.get("saved_artifacts") or {}),
@@ -111,6 +114,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     try:
       current = context_variables.get("current_research_topic", 0)
       topics = context_variables.get("research_topics", [])
+      current_topic = topics[current] if len(topics) > current else None
 
       if current + 1 >= len(topics):
         if context_variables.get("debug", False):
@@ -118,7 +122,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
 
         from .runbook_planning_agent import create_runbook_planning_agent
         return AsyncResult(
-          value="Research complete",
+          value="Research complete. Handing off to runbook planning agent.",
           context_variables={
             "current_expansion_topic": 0
           },
@@ -127,7 +131,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
 
 
       return AsyncResult(
-        value="Moving to next topic",
+        value=f"Finished researching topic {current_topic}, continuing with next topic.",
         context_variables={"current_research_topic": current + 1},
         agent=create_topic_research_agent(settings)
       )

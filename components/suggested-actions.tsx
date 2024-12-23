@@ -16,14 +16,14 @@ interface SuggestedActionsProps {
 function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
   const suggestedActions = [
     {
-      title: 'What is the weather',
-      label: 'in San Francisco?',
-      action: 'What is the weather in San Francisco?',
+      title: 'Create a runbook for',
+      label: 'deploying a basic web application',
+      action: 'Create a runbook for deploying and monitoring a basic web application, including health checks and common troubleshooting steps.',
     },
     {
-      title: 'Help me write code to',
-      label: 'demonstrate the djikstra algorithm!',
-      action: 'Help me write code to demonstrate the djikstra algorithm!',
+      title: 'Generate a runbook about',
+      label: 'ML model training with MLflow and S3',
+      action: 'Create a detailed runbook for training ML models using MLflow, storing artifacts in S3, and managing model versions. Include best practices and common issues.',
     },
   ];
 

@@ -38,7 +38,7 @@ const getAgentActionText = (
     case 'save_requirements':
       return tense === 'present' ? 'Saving requirements' : 'Saved requirements';
     case 'kickoff_research':
-      return tense === 'present' ? 'Starting research' : 'Started research';
+      return tense === 'present' ? 'Planning research topics' : 'Planned research topics';
 
     // Topic Research Agent
     case 'query_for_artifacts':

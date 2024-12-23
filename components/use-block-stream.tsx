@@ -35,39 +35,33 @@ export function useBlockStream({
       setTitle(delta.content as string);
       return;
     }
+    if (delta.type === 'context_delta') {
+      setBlock((draftBlock) => {
+        const updatedContext = delta.content;
+        const previousContext = draftBlock.context;
+        const updatedBlock : UIBlock = {
+          ...draftBlock,
+          context: {
+            ...draftBlock.context,
+            ...updatedContext,
+          },
+        }
+        if (Object.keys(updatedContext.saved_artifacts ?? {}).length > 0) {
+          updatedBlock.activeTab = 'artifacts';
+          updatedBlock.isVisible = true;
+        }
+        if (updatedContext.runbook_sections) {
+          updatedBlock.activeTab = 'outline';
+          updatedBlock.isVisible = true;
+        }
+        if ((previousContext.runbook_sections ?? []).map((section) => section.content).join('') !==
+        (updatedContext.runbook_sections ?? []).map((section) => section.content).join('')) {
+          updatedBlock.activeTab = 'document';
+          updatedBlock.isVisible = true;
+        }
 
-    setBlock((draftBlock) => {
-      const currentRunbookSection = delta.content.current_runbook_section;
-      const updatedRunbookSection = delta.content.runbook_sections?.[currentRunbookSection ?? 0];
-      const updatedRunbookSectionContent = updatedRunbookSection?.content;
-      if (updatedRunbookSectionContent) {
-        const updatedBlock : UIBlock = {
-          ...draftBlock,
-          context: delta.content as ContextVariables,
-          activeTab: 'document',
-          isVisible: true,
-        }
         return updatedBlock;
-      }
-      if (updatedRunbookSection) {
-        const updatedBlock : UIBlock = {
-          ...draftBlock,
-          context: delta.content as ContextVariables,
-          activeTab: 'outline',
-          isVisible: true,
-        }
-        return updatedBlock;
-      }
-      if (Object.keys(delta.content.saved_artifacts ?? {}).length > 0) {
-        const updatedBlock : UIBlock = {
-          ...draftBlock,
-          context: delta.content as ContextVariables,
-          activeTab: 'artifacts',
-          isVisible: true,
-        }
-        return updatedBlock;
-      }
-      return draftBlock;
-    });
+      });
+    }
   }, [streamingData, setBlock]);
 }

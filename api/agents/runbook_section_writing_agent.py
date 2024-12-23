@@ -188,7 +188,7 @@ Remember:
           value="All sections written",
           context_variables={
             "runbook_sections": all_sections,
-            "current_runbook_section": current_section_idx + 1
+            "current_runbook_section": None,
           },
           agent=create_research_coordinator_agent(settings)
         )

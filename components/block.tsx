@@ -205,7 +205,11 @@ function PureBlock({
           </div>
         </div>
 
-        <Tabs defaultValue={block.activeTab} className="flex-1">
+        <Tabs
+          value={block.activeTab}
+          onValueChange={(value) => setBlock({ ...block, activeTab: value as ActiveTab })}
+          className="flex-1"
+        >
           <TabsList className="mx-4">
             <TabsTrigger value="artifacts">Supporting Articles</TabsTrigger>
             <TabsTrigger value="outline">Draft Outline</TabsTrigger>

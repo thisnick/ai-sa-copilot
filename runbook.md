@@ -1,248 +1,239 @@
-## Sign Up for Databricks
+## Step 1: Setting Up MLflow for Model Training
 
 ### Goals
 
-This section aims to guide you through setting up a Databricks account, allowing you to be prepared for creating and managing a workspace on AWS.
+In this section, our goal is to prepare the environment on Databricks for training ML models using MLflow. This involves installing necessary libraries, configuring experiments and runs for effective tracking, and saving configurations for tracking machine learning and deep learning training runs.
 
 ### High-level Steps
 
-1. Create an AWS account (if not already available)
-2. Choose a sign-up method: via Databricks directly or through AWS Marketplace.
-3. Follow the sign-up process specific to the method chosen (email verification, creating passwords, etc.).
-4. Manage billing options during or post-trial if required.
+1. Install MLflow and necessary libraries on Databricks Runtime ML clusters.
+2. Configure experiments and runs within MLflow for organized tracking.
+3. Save configurations for tracking ML and deep learning training runs.
 
-### Step 1: Create an AWS Account
+### Step 1.1: Install MLflow and Necessary Libraries
 
-1. Navigate to the [AWS website](https://aws.amazon.com/).
-2. Follow the instructions to sign up for a new account if you do not already have one. This step is necessary as Databricks requires compute and storage resources from your AWS account.
+- MLflow is typically pre-installed on Databricks Runtime ML clusters. To use MLflow on a standard Databricks Runtime cluster, manual installation is required.
+- For Python, use PyPI to install the `mlflow` package.
+- For R, use CRAN to install the `mlflow` package.
+- For Scala, use Maven to install `org.mlflow:mlflow-client:1.11.0` along with the Python `mlflow` package from PyPI.
 
-### Step 2: Choose a Sign-Up Method
+  Example:
 
-- **Through Databricks Directly:**
-  1. Visit the [Try Databricks](https://databricks.com/try-databricks) page.
-  2. Enter your name, company, email, and title, then click **Continue**.
-  3. Select **Amazon Web Services** as your cloud provider and click **Get started**.
-  4. Verify your email address through the link sent to you.
-  5. Proceed to create your workspace from the Databricks account console.
+  ```python
+  # Python
+  !pip install mlflow
+  
+  # R
+  install.packages("mlflow")
+  
+  # Scala
+  // In the Spark environment
+  spark.jars.packages="org.mlflow:mlflow-client:1.11.0"
+  
+  // PyPI
+  !pip install mlflow
+  ```
 
-- **Through AWS Marketplace:**
-  1. Log in to your AWS account with Purchaser role access.
-  2. Navigate to [AWS Marketplace](https://aws.amazon.com/marketplace/pp/prodview-wtyi5lgtce6n6).
-  3. Select **View purchase options** then click **Subscribe**.
-  4. Complete the email verification process and set your password to access Databricks account console.
+### Step 1.2: Configure Experiments and Runs
 
-### Step 3: Manage Billing Options
+- Utilize the MLflow concepts of experiments and runs to organize and manage your machine learning projects.
+- An experiment is the primary unit of organization and access control for MLflow runs.
+- To create and set an active experiment, use the `mlflow.set_experiment()` function or set environment variables `MLFLOW_EXPERIMENT_NAME` and `MLFLOW_EXPERIMENT_ID`.
 
-- For **Direct Databricks signup**, add billing information to maintain account utility post-trial. This involves:
-  1. Logging in to the account console and accessing **Subscription & Billing** under settings.
-  2. Adding and saving your billing information.
-- For **AWS Marketplace**, billing is managed alongside your AWS charges post-trial.
+  Example:
+
+  ```python
+  import mlflow
+  
+  mlflow.set_experiment("my_experiment")
+  
+  # Or use environment variables
+  import os
+  os.environ['MLFLOW_EXPERIMENT_NAME'] = "my_experiment"
+  ```
+
+### Step 1.3: Save Configurations for Tracking Runs
+
+- Tracking involves logging parameters, metrics, tags, and artifacts during model training and storing these in the MLflow tracking server.
+- Use the MLflow Tracking API for logging, which supports Python, Java, and R APIs.
+
+  Example:
+
+  ```python
+  with mlflow.start_run() as run:
+      mlflow.log_param("alpha", 0.5)
+      mlflow.log_metric("rmse", 0.78)
+      mlflow.log_artifacts("models/")
+  ```
 
 References:
-- [Start a Databricks free trial](https://databricks.com/try-databricks)
-- [AWS website](https://aws.amazon.com/)
+- [Track ML and Deep Learning Training Runs - Databricks](https://docs.databricks.com/en/mlflow/tracking.html)
 
-## Set Up Databricks Workspace
+- [Manage Training Code with MLflow Runs - Databricks](https://docs.databricks.com/en/mlflow/runs.html)
+
+## Step 2: Storing MLflow Artifacts in S3
 
 ### Goals
 
-The aim of this section is to help establish a Databricks workspace on AWS, ensuring that you have a ready environment for data processing and analytics.
+The primary goal of this section is to efficiently store MLflow artifacts, such as metrics, parameters, and model artifacts generated during model training, in AWS S3.
 
 ### High-level Steps
 
-1. Verify necessary permissions in AWS (IAM roles, S3 buckets, VPC, NAT gateway).
-2. Initiate workspace setup in chosen AWS region using AWS CloudFormation.
-3. Name the workspace and complete stack creation through AWS console.
+1. Configure S3 access with necessary IAM roles and permissions using instance profiles.
+2. Set up artifact logging to store outputs like metrics, parameters, and models in S3.
 
-### Step 1: Verify Necessary Permissions in AWS
+### Step 2.1: Configure S3 Access with IAM Roles and Instance Profiles
 
-1. Ensure that you have the permission to provision IAM roles and S3 buckets in your AWS account.
-2. Check that you have available service quotas for a Databricks deployment in your AWS region, including a Virtual Private Cloud (VPC) and a Network Address Translation (NAT) gateway.
+- The first step in storing MLflow artifacts in S3 is to configure access using AWS IAM roles and instance profiles.
+- Use the AWS Management Console to create an IAM role with S3 access permissions and attach it to the Databricks instance profile.
+- Define a bucket policy granting the necessary permissions (such as `s3:PutObject`, `s3:GetObject`, etc.) for the IAM role to interact with the appropriate S3 bucket.
 
-### Step 2: Initiate Workspace Setup
+  Example IAM Policy:
 
-1. Sign into your Databricks account.
-2. Follow the instructions provided in the Databricks account console to set up your workspace.
-3. Select the AWS region for the deployment and ensure necessary network configurations are available.
+  ```json
+  {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Effect": "Allow",
+              "Action": ["s3:ListBucket"],
+              "Resource": ["arn:aws:s3:::<s3-bucket-name>"]
+          },
+          {
+              "Effect": "Allow",
+              "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:PutObjectAcl"],
+              "Resource": ["arn:aws:s3:::<s3-bucket-name>/*"]
+          }
+      ]
+  }
+  ```
 
-### Step 3: Complete Workspace Creation
+- Add this policy to the IAM role associated with your Databricks workspace.
 
-1. Click **Start Quickstart** to open the AWS Console with a prepopulated CloudFormation template.
-2. Check "I acknowledge that AWS CloudFormation might create IAM resources with custom names."
-3. Click **Create stack** to begin the setup.
-4. Return to the Databricks account console and wait for the workspace to finish deploying.
+### Step 2.2: Set Up Artifact Logging in MLflow to S3
 
-### Troubleshooting
+- After successfully configuring access, set up MLflow to log artifacts directly to the specified S3 bucket.
+- Use the `mlflow.log_artifacts` function to specify S3 paths where artifacts should be stored. Set the environment variable `MLFLOW_S3_ENDPOINT_URL` if using a compatible S3 API.
 
-- If deployment fails, refrain from editing additional fields in the CloudFormation template.
-- For additional support, contact [onboarding-help@databricks.com](mailto:onboarding-help@databricks.com).
+  Example:
 
-References:
-- [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
+  ```python
+  # Code snippet to log artifacts to a specific S3 path
+  import mlflow
 
-## Create Compute Resources
+  with mlflow.start_run() as run:
+      mlflow.log_artifacts('<local-folder-path>', artifact_path="s3://<s3-bucket-name>/<artifacts-key-prefix>")
+  ```
+
+### References
+
+- [Tutorial: Configure S3 Access with an Instance Profile - Databricks](https://docs.databricks.com/en/connect/storage/tutorial-s3-instance-profile.html)
+- [Create an S3 Bucket for Workspace Deployment - Databricks](https://docs.databricks.com/en/admin/account-settings-e2/storage.html)
+
+## Step 3: Managing Model Versions in MLflow
 
 ### Goals
 
-The goal of this section is to guide you in creating a compute resource, specifically a serverless SQL warehouse, which will allow you to run queries efficiently.
+This section focuses on implementing effective version control and managing the model lifecycle using MLflow's capabilities. It covers accessing the MLflow Model Registry and deploying different model versions across various environments.
 
 ### High-level Steps
 
-1. Open Databricks workspace.
-2. Navigate to SQL Warehouses.
-3. Create SQL Warehouse and set permissions for access.
+1. Access and utilize the MLflow Model Registry for version management.
+2. Organize and deploy different model versions in various environments.
 
-### Step 1: Open Databricks Workspace
+### Step 3.1: Access and Utilize the MLflow Model Registry
 
-1. Go to your Databricks account and log in.
-2. Access your previously set up Databricks workspace.
+- The MLflow Model Registry serves as a centralized model store, designed to manage the full lifecycle of MLflow Models.
+- Register models with MLflow's `register_model` API to maintain a historical record and organize different versions.
 
-### Step 2: Navigate to SQL Warehouses
+  Example:
 
-1. Once in the workspace interface, locate the sidebar menu.
-2. Click on **SQL Warehouses** to go to the SQL management area.
+  ```python
+  mlflow.register_model(model_uri="runs:/<run_id>/model", name="my_model")
+  ```
 
-### Step 3: Create SQL Warehouse
+- Transition models to different stages such as "Staging" or "Production" using the Model Registry CLI or API.
 
-1. Click the **Create SQL Warehouse** button.
-2. Provide a name for your SQL warehouse to identify it easily.
-3. Click **Create** to establish the SQL warehouse.
+  ```python
+  from mlflow.tracking import MlflowClient
+  client = MlflowClient()
+  client.transition_model_version_stage(
+      name="my_model",
+      version=1,
+      stage="Production"
+  )
+  ```
 
-### Step 4: Set Permissions
+### Step 3.2: Organize and Deploy Models in Various Environments
 
-1. After creating the warehouse, a permissions modal will appear.
-2. Enter `All Users` into the permission field, then click **Add**.
-3. Confirm that your SQL warehouse is operational and available for SQL queries.
+- Deployment strategies should reflect the lifecycle stage of the model, ensuring models in production are robust.
+- Use aliases in Unity Catalog for organizing model versions and managing deployment across environments.
 
-References:
-- [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
+  Example:
 
-## Connect to Data Sources
+  ```python
+  # Set alias for a model version
+  client.set_registered_model_alias(name="my_model", alias="latest_prod", version=1)
+  
+  # Load model by alias
+  model_uri = "models:/my_model@latest_prod"
+  model = mlflow.pyfunc.load_model(model_uri)
+  ```
+
+### References
+
+- [Log, load, register, and deploy MLflow models - Databricks](https://docs.databricks.com/en/mlflow/models.html)
+- [Manage model lifecycle in Unity Catalog - Databricks](https://docs.databricks.com/en/machine-learning/manage-model-lifecycle/index.html)
+
+## Step 4: Best Practices and Common Pitfalls
 
 ### Goals
 
-In this section, the focus is on establishing a connection between the Databricks workspace and your data storage sources in AWS, specifically using Amazon S3.
+This section aims to reduce risks and improve model training efficiency in MLflow workflows by following best practices and identifying common pitfalls.
 
 ### High-level Steps
 
-1. Navigate to Databricks Catalog.
-2. Create an external location using AWS Quickstart for S3.
-3. Test connection to ensure proper setup.
+1. Follow recommended practices for data management and version control.
+2. Identify and avoid common issues that may arise during model training and deployment.
 
-### Step 1: Navigate to Databricks Catalog
+### Step 4.1: Recommended Practices for Data Management and Version Control
 
-1. In your Databricks workspace, click **Catalog** on the sidebar.
+- Leverage Delta Lake with MLflow to ensure reproducibility and accurate tracking of training data. Delta Lake's ACID properties help maintain data integrity.
+- Regularly version your datasets and code to maintain consistency across different runs.
 
-### Step 2: Create an External Location
+  Example:
 
-1. At the top of the page, click **+ Add**.
-2. Click **Add an external location**.
-3. Use **AWS Quickstart** to ensure that your workspace is given the correct permissions on the S3 bucket.
-4. Enter the bucket name from which you want to import data.
-5. Click **Generate New Token** and copy the token.
-6. Click **Launch in Quickstart**.
-7. Enter the copied token in the **Databricks Personal Access Token** field in your AWS console.
-8. Check the option "I acknowledge that AWS CloudFormation might create IAM resources with custom names."
-9. Click **Create stack**.
+  ```python
+  import mlflow
 
-### Step 3: Test Your Connection
+  # Use Delta Lake for data management
+  delta_table = DeltaTable.forPath(spark, "/path/to/delta_table")
+  ```
 
-1. Navigate back to the external locations in your workspace.
-2. Click on the external location you've set up.
-3. Click **Test connection** to ensure the setup works.
+- Implement automated CI/CD pipelines for seamless deployment of ML models, ensuring each stage transition is well-documented and tracked.
 
-References:
-- [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
+### Step 4.2: Identify and Avoid Common Issues
 
-## Add Users and Set Permissions
+- Keep track of environment dependencies using conda or virtualenv to ensure consistency across different operating environments.
+- Monitor resource usage and performance metrics to avoid overfitting and underfitting.
+- Be cautious of data drift and concept drift, particularly when deploying models to production.
 
-### Goals
+  Example:
 
-This section focuses on allowing multiple users to access and work within the Databricks workspace by adding them and setting their permissions according to roles and needs.
+  ```python
+  # Track environment using conda
+  mlflow.set_experiment("my_experiment")
+  
+  with mlflow.start_run() as run:
+      mlflow.log_artifact("environment.yml")
+  ```
 
-### High-level Steps
+### Common Issues
 
-1. Add users to Databricks workspace from settings.
-2. Set permissions according to user roles and needs.
+- **Environment Reproducibility:** Ensure all dependencies and libraries are documented and portable.
+- **Hard-to-Debug Errors:** Regular feedback loops with logging and monitoring can help catch errors early.
 
-### Step 1: Add Users
+### References
 
-1. In the top bar of the Databricks workspace, click your username and then click **Settings**.
-2. In the sidebar, click **Identity and access**.
-3. Next to **Users**, click **Manage**.
-4. Click **Add user**, and then click **Add new**.
-5. Enter the user’s email address, and then click **Add**.
-
-### Step 2: Set Permissions
-
-1. Once users are added, define the permissions that meet your organization’s data governance policy.
-2. Common permissions include:
-   - Granting users `SELECT` permissions on catalogs or schemas.
-   - Setting `USE` permissions on the objects for accessing specific data.
-   - Granting `CREATE EXTERNAL LOCATION` for connection to external data sources.
-3. Ensure permissions are cascaded properly if assigning to higher-level objects such as catalogs and schemas.
-
-References:
-- [Get started: Databricks workspace onboarding](https://docs.databricks.com/en/getting-started/onboarding-account.html)
-
-## Install Databricks CLI
-
-### Goals
-
-The objective of this section is to provide guidance on setting up the Databricks Command-Line Interface (CLI), which facilitates advanced management and automation options for your Databricks environment.
-
-### High-level Steps
-
-1. Choose installation method: Homebrew, WinGet, or Source.
-2. Follow the appropriate installation steps for your operating system.
-3. Authenticate CLI using Databricks account details.
-
-### Step 1: Choose Installation Method
-Databricks CLI can be installed using several methods depending on your operating system:
-
-- **Homebrew (Linux/MacOS):**
-  1. Install Homebrew if not already installed:
-     ```bash
-     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-     ```
-  2. Tap the Databricks repo and install:
-     ```bash
-     brew tap databricks/tap
-     brew install databricks
-     ```
-- **WinGet or Chocolatey (Windows):**
-  1. Use WinGet:
-     ```bash
-     winget install Databricks.DatabricksCLI
-     ```
-  2. Alternatively, use Chocolatey:
-     ```bash
-     choco install databricks-cli
-     ```
-- **Source (Linux/MacOS/Windows):**
-  1. Download the `.zip` file from the [Databricks CLI's GitHub Releases](https://github.com/databricks/cli/releases).
-  2. Extract and move the executable to a directory included in your `PATH`.
-
-### Step 2: Verify Installation
-
-1. Open your command prompt or terminal.
-2. Execute `databricks -v` or `databricks version` to ensure the correct installation:
-   ```bash
-   databricks -v
-   # Or:
-   databricks version
-   ```
-   - If the version number is 0.205.0 or higher, the installation is valid.
-
-### Step 3: Authenticate CLI
-
-The final step is to authenticate the Databricks CLI:
-
-1. Run the authentication command:
-   ```bash
-   databricks configure --token
-   ```
-2. Enter your Databricks host URL and your personal access token when prompted.
-
-References:
-- [Databricks CLI Installation Guide](https://docs.databricks.com/en/dev-tools/cli/install.html)
+- [Track scikit-learn model training with MLflow - Databricks](https://docs.databricks.com/en/mlflow/tracking-ex-scikit.html)
+- [ML lifecycle management using MLflow - Databricks](https://docs.databricks.com/en/mlflow/index.html)
