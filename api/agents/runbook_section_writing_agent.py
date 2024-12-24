@@ -13,6 +13,7 @@ from .tools import (
   async_get_knowledge_topics,
   async_query_for_artifacts,
   format_artifacts,
+  format_topic_artifacts,
   format_knowledge_topics,
   format_runbook_section_outline,
   format_written_sections
@@ -26,14 +27,9 @@ def create_runbook_section_writing_agent(settings: Settings) -> AsyncAgent:
   async def instructions(context_variables: ContextVariables):
     current_section_idx = context_variables.get("current_runbook_section") or 0
     current_section = (context_variables.get("runbook_sections") or [])[current_section_idx or 0]
-    artifacts = [
-      artifact
-      for topic, artifacts in (context_variables.get("saved_artifacts") or {}).items()
-      for artifact in artifacts
-      if artifact.artifact_id in current_section.related_artifacts
-    ]
+    saved_artifacts = context_variables.get("saved_artifacts", {})
     section_research_artifacts = (context_variables.get("section_research_artifacts") or {}).get(current_section_idx) or []
-    artifacts = artifacts + section_research_artifacts
+
     domain_id = context_variables.get("domain_id")
     formatted_topics = format_knowledge_topics(await async_get_knowledge_topics(domain_id)) if domain_id else ""
 
@@ -59,8 +55,10 @@ Here is your workflow:
    to call `retrieve_artifacts` to get the actual contents of the artifacts. You
    should only use the contents from the actual artifacts, not the summaries.
 5. If you have gathered all the article contents you need to start writing, call
-   "submit_writing_for_section" to submit the section content and move on.
-    You will write the section content in the markdown format. Follow this format:
+   "submit_writing_for_section" to submit the section content and move on. Normally,
+   you should continue writing the next section unless the user specifically asked
+   you to write only one section.
+6. You will write the section content in the markdown format. Follow this format:
 ```
    ## Section Title
    ### Goals
@@ -88,7 +86,8 @@ Remember:
 * When writing your section, be as detailed and comprehensive as possible. Provide
   complete information that users need to achieve their goals. Avoid directing users
   to external URLs unless it's necessary to gather specific information that
-  will influence their next steps.
+  will influence their next steps. Retain as much information as possible from the
+  retrieved artifacts.
 * It's important you repeat the above steps for each section unless you already have
   all the information you need to write the section.
 
@@ -100,17 +99,25 @@ Remember:
 
 {format_written_sections((context_variables.get("runbook_sections") or []), up_to=current_section_idx)}
 
+# Unwritten sections:
+
+{sum(1 for section in context_variables.get("runbook_sections") or [] if not section.content)}
+
 # Outline of the section you are writing:
 
 {format_runbook_section_outline(current_section)}
 
-# Core topics and key concepts in the knowledge base:
+# Core topics and key concepts that can be looked up in the knowledge base:
 
 {formatted_topics}
 
-# Supporting artifacts for this section:
+# Artifacts matched with the user requirements:
 
-{format_artifacts(artifacts, include_links=True)}
+{format_topic_artifacts(saved_artifacts or {}, treat_metadata_as_content=True, include_links=True)}
+
+# Specific artifacts contents already looked up for this section:
+
+{format_artifacts(section_research_artifacts, include_links=False, treat_metadata_as_content=False)}
     """
     return prompt
 
@@ -118,7 +125,7 @@ Remember:
     if isinstance(artifact_ids, str):
       artifact_ids = json.loads(artifact_ids)
 
-    artifacts = await async_get_artifacts(artifact_ids, with_links=False)
+    artifacts = await async_get_artifacts(artifact_ids)
 
     # saved_artifacts = context_variables.get("saved_artifacts", {}).copy()
     # current_topic = context_variables["research_topics"][context_variables["current_expansion_topic"]]
@@ -163,12 +170,19 @@ Remember:
     except Exception as e:
       return AsyncResult(value=f"Error retrieving artifacts: {e}")
 
-  async def submit_writing_for_section(context_variables: Dict[str, Any], section_content: str) -> AsyncResult:
+  async def submit_writing_for_section(
+    context_variables: Dict[str, Any],
+    section_content: str,
+    continue_writing_next_section: bool = True
+  ) -> AsyncResult:
     """Write the section content. If there are more sections to write, move on to the next section.
     Otherwise, save the runbook and hand off the next steps back to the research coordinator agent.
 
     Arguments:
       section_content: the content of the section to write in Markdown format.
+      continue_writing_next_section: whether to continue writing the next section or if the user
+      specifically asked you to write only one section, hand off the control back to the
+      research coordinator agent.
     """
     try:
       current_section_idx = context_variables.get("current_runbook_section", 0)
@@ -176,16 +190,16 @@ Remember:
       current_section = all_sections[current_section_idx]
       current_section.content = section_content
 
-      if current_section_idx + 1 >= len(all_sections):
+      if current_section_idx + 1 >= len(all_sections) or not continue_writing_next_section:
         if context_variables.get("debug", False):
           print("Session writing complete", context_variables.get("runbook_sections", {}))
         # Save all sections to a markdown file
-        with open("runbook.md", "w") as f:
-          f.write("\n\n".join(section.content for section in all_sections))
+        # with open("runbook.md", "w") as f:
+        #   f.write("\n\n".join(section.content for section in all_sections))
 
         from .research_coordinator_agent import create_research_coordinator_agent
         return AsyncResult(
-          value="All sections written",
+          value="Section writing complete. Handing off to research coordinator agent.",
           context_variables={
             "runbook_sections": all_sections,
             "current_runbook_section": None,
@@ -194,7 +208,7 @@ Remember:
         )
 
       return AsyncResult(
-        value=f"Section {current_section_idx + 1} written",
+        value=f"Section {current_section_idx + 1} written. Ready to write the next section.",
         context_variables={
           "runbook_sections": all_sections,
           "current_runbook_section": current_section_idx + 1

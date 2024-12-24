@@ -36,6 +36,7 @@ export interface ArtifactSummary {
 
 export interface ArtifactWithLinks extends ArtifactSummary {
   parsed_text: string;
+  metadata: Record<string, any> | null;
   outbound_links: ArtifactSummary[] | null;
   inbound_links: ArtifactSummary[] | null;
 }

@@ -4,12 +4,11 @@
     "nodejs@latest",
     "pnpm@latest",
     "python312@latest",
-    "poetry@latest",
     "postgresql@latest"
   ],
   "shell": {
     "init_hook": [
-      "echo 'Welcome to devbox!' > /dev/null"
+      ". $VENV_DIR/bin/activate"
     ],
     "scripts": {
       "test": [

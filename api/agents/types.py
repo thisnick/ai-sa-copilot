@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, TypedDict
+from typing import Any, List, Dict, Optional, TypedDict
 from pydantic import BaseModel, Field
 
 
@@ -10,8 +10,9 @@ class ArtifactSummary(BaseModel):
 
 class ArtifactWithLinks(ArtifactSummary):
   parsed_text: str
-  outbound_links: List[ArtifactSummary] | None
-  inbound_links: List[ArtifactSummary] | None
+  metadata: Optional[Dict[str, Any]] = None
+  outbound_links: Optional[List[ArtifactSummary]] = None
+  inbound_links: Optional[List[ArtifactSummary]] = None
 
 class ResearchTopic(BaseModel):
   research_question: str

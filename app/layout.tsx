@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ai-sdk-preview-rag.vercel.app"),
-  title: "Retrieval Augmented Generation Preview",
+  // metadataBase: new URL("https://ai-sdk-preview-rag.vercel.app"),
+  title: "Run Book Maker",
   description:
-    "Augment language model generations with vector based retrieval using the Vercel AI SDK",
+    "This tool demonstrates creating comprehensive run books by analyzing a product's documentation. It researches and synthesizes documentation to produce a single run book. For now, it only has documentation for Databricks, but more will be added.",
 };
 
 export default function RootLayout({

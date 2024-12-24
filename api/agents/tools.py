@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 from typing import Dict, List, Literal, Optional, TypedDict
 
@@ -65,38 +66,49 @@ def format_related_artifacts(artifact: ArtifactWithLinks) -> str:
   )
   return f"Outbound Links:\n{outbound_links}\n\nInbound Links:\n{inbound_links}"
 
+def format_artifact(artifact: ArtifactWithLinks, include_links: bool = False, treat_metadata_as_content: bool = False) -> str:
+  if treat_metadata_as_content:
+    if artifact.metadata:
+      content = f"# Content (metadata)\n\n{json.dumps(artifact.metadata)}"
+    else:
+      content = f"# Content (summary)\n\n{artifact.summary}"
+  else:
+    content = f"# Content (full text)\n\n{artifact.parsed_text}"
 
-def format_artifacts(artifacts: List[ArtifactWithLinks], include_links: bool = False) -> str:
+  return f"""# Title: {artifact.title}
+
+ - Artifact ID: {artifact.artifact_id}
+ - URL: {artifact.url}
+
+{content}
+""" + (
+    f"\n\nRelated Artifacts:\n{format_related_artifacts(artifact)}" if include_links else ""
+  )
+
+def format_artifacts(artifacts: List[ArtifactWithLinks], include_links: bool = False, treat_metadata_as_content: bool = False) -> str:
   return "\n\n---\n\n".join([
-    f"# Title: {artifact.title}\n\n## Artifact ID: \n\n{artifact.artifact_id}\n\n## Content: \n\n{artifact.parsed_text}" +
-    (f"\n\nRelated Artifacts:\n{format_related_artifacts(artifact)}" if include_links else "")
+    format_artifact(artifact, include_links, treat_metadata_as_content)
     for artifact in artifacts
   ])
 
-def format_topic_artifacts(artifacts: Dict[str, List[ArtifactWithLinks]], include_links: bool = False) -> str:
+def format_topic_artifacts(artifacts: Dict[str, List[ArtifactWithLinks]], include_links: bool = False, treat_metadata_as_content: bool = False) -> str:
   return "\n\n---\n\n".join([
-    f"Research Topic: {topic}:\n\nRetrieved Artifacts:\n{format_artifacts(artifacts, include_links)}"
+    f"Research Topic: {topic}:\n\nRetrieved Artifacts:\n{format_artifacts(artifacts, include_links, treat_metadata_as_content)}"
     for topic, artifacts in artifacts.items()
   ])
 
 def format_written_sections(sections: List[RunbookSection], up_to: Optional[int] = None) -> str:
-  return "\n\n---\n\n".join([section.content for section in sections[:up_to] if section.content]) or "None"
+  return "\n\n---\n\n".join([
+    f"Section {i + 1}\n\n{section.content}"
+    for i, section in enumerate(sections[:up_to])
+    if section.content
+  ]) or "None"
 
 def format_runbook_section_outline(section: RunbookSection) -> str:
   return f"## Section Title: {section.section_title}\n\n## Outline:\n{section.outline}"
 
-async def async_get_artifacts_from_supabase(artifact_ids: List[str]) -> List[Dict]:
-  """Fetches basic artifact data from Supabase."""
-  supabase = get_supabase_client_from_context()
-  artifacts_response = await (
-    supabase
-    .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
-    .execute()
-  )
-  return artifacts_response.data
-
 async def async_get_artifacts(
-  artifact_ids: List[str], with_links: bool = False
+  artifact_ids: List[str]
 ) -> List[ArtifactWithLinks]:
   supabase = get_supabase_client_from_context()
   artifacts_response = await (

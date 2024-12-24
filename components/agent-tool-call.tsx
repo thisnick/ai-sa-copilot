@@ -100,7 +100,7 @@ function PureAgentToolResult({
           <MessageIcon />
         </div>
         <div className="text-left">
-          Performed action: {type}
+          Thought for a bit
         </div>
       </div>
     )
@@ -175,7 +175,7 @@ function PureAgentToolCall({
           <MessageIcon />
         </div>
         <div className="text-left">
-          Performing action: {type}
+          Thinking...
         </div>
       </div>
     )

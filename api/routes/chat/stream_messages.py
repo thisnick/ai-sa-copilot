@@ -8,6 +8,7 @@ from supabase import AsyncClient
 
 from api.agents.contexts import get_supabase_client_from_context
 from api.agents.types import ContextVariables
+from api.config import Settings
 from api.db.types import Thread
 from api.agents import stream_response
 from swarm.types import (
@@ -21,6 +22,7 @@ from swarm.types import (
 
 router = APIRouter()
 
+settings = Settings()
 
 class Request(BaseModel):
   domain_id: str
@@ -243,7 +245,7 @@ async def stream_messages(
   assert isinstance(messages, list)
 
   messages.append({"role": "user", "content": request.message})
-  swarm_response = await stream_response(messages, agent_name, context_variables)
+  swarm_response = await stream_response(messages, agent_name, context_variables, settings)
 
   return StreamingResponse(
     generate_stream(swarm_response, thread_id, messages),

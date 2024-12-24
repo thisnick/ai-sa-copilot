@@ -89,7 +89,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
       if isinstance(artifact_ids, str):
         artifact_ids = json.loads(artifact_ids)
 
-      artifacts = await async_get_artifacts(artifact_ids, with_links=True)
+      artifacts = await async_get_artifacts(artifact_ids)
       current_topic_idx = context_variables.get("current_research_topic") or 0
       current_topic = (context_variables.get("research_topics") or [])[current_topic_idx]
       remaining_topics = (context_variables.get("research_topics") or [])[current_topic_idx + 1:]
@@ -106,7 +106,9 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     except Exception as e:
       return AsyncResult(value=f"Error saving artifacts: {e}")
 
-  async def finish_research(context_variables: Dict[str, Any]) -> AsyncResult:
+  async def finish_research(
+    context_variables: Dict[str, Any],
+  ) -> AsyncResult:
     """Finish the research of this topic. If there are more topics to research,
     move on to the next topic. Otherwise, hand off the research to the
     runbook planning agent.
@@ -128,7 +130,6 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
           },
           agent=create_runbook_planning_agent(settings)
         )
-
 
       return AsyncResult(
         value=f"Finished researching topic {current_topic}, continuing with next topic.",

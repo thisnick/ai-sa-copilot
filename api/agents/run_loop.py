@@ -23,6 +23,7 @@ async def stream_response(
 ) -> AsyncStreamingResponse:
   agent_name = agent_name or INITIAL_AGENT
   agent = create_agent(settings, agent_name)
+  print("created agent", agent)
   llm_client = AsyncLiteLLM()
 
   def retry_logging(retry_state):

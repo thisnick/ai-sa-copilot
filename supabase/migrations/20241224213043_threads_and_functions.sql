@@ -89,64 +89,59 @@ $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.get_artifacts_with_links(artifact_ids uuid[], max_links integer DEFAULT 10)
- RETURNS TABLE(artifact_id uuid, url text, title text, summary text, parsed_text text, outbound_links jsonb, inbound_links jsonb)
+ RETURNS TABLE(artifact_id uuid, url text, title text, summary text, parsed_text text, metadata jsonb, outbound_links jsonb, inbound_links jsonb)
  LANGUAGE plpgsql
-AS $function$ BEGIN RETURN QUERY
-SELECT a.artifact_id,
-    a.url,
-    a.title,
-    a.summary,
-    a.parsed_text,
-    COALESCE(
-        (
-            SELECT jsonb_agg(outbound)
-            FROM (
-                    SELECT DISTINCT ON (al.target_url) jsonb_build_object(
-                            'artifact_id',
-                            target.artifact_id,
-                            'url',
-                            target.url,
-                            'title',
-                            target.title,
-                            'summary',
-                            target.summary
-                        ) AS outbound
-                    FROM artifact_links al
-                        LEFT JOIN artifacts target ON al.target_url = target.url
-                    WHERE al.source_artifact_id = a.artifact_id
-                    ORDER BY al.target_url
-                    LIMIT max_links
-                ) AS outbound_links
-        ),
-        '[]'::jsonb
-    ) AS outbound_links,
-    COALESCE(
-        (
-            SELECT jsonb_agg(inbound)
-            FROM (
-                    SELECT DISTINCT ON (il.source_artifact_id) jsonb_build_object(
-                            'artifact_id',
-                            il.source_artifact_id,
-                            'url',
-                            source.url,
-                            'title',
-                            source.title,
-                            'summary',
-                            source.summary
-                        ) AS inbound
-                    FROM artifact_links il
-                        LEFT JOIN artifacts source ON il.source_artifact_id = source.artifact_id
-                    WHERE il.target_url = a.url
-                    ORDER BY il.source_artifact_id
-                    LIMIT max_links
-                ) AS inbound_links
-        ),
-        '[]'::jsonb
-    ) AS inbound_links
-FROM artifacts a
-WHERE a.artifact_id = ANY(artifact_ids);
-END;
-$function$
+AS $function$
+ BEGIN
+   RETURN QUERY
+   SELECT a.artifact_id,
+     a.url,
+     a.title,
+     a.summary,
+     a.parsed_text,
+     a.metadata,
+     COALESCE(
+       (
+         SELECT jsonb_agg(outbound)
+         FROM (
+           SELECT DISTINCT ON (al.target_url) jsonb_build_object(
+             'artifact_id', target.artifact_id,
+             'url', target.url,
+             'title', target.title,
+             'summary', target.summary
+           ) AS outbound
+           FROM artifact_links al
+             LEFT JOIN artifacts target ON al.target_url = target.url
+           WHERE al.source_artifact_id = a.artifact_id
+           ORDER BY al.target_url
+           LIMIT max_links
+         ) AS outbound_links
+       ),
+       '[]'::jsonb
+     ) AS outbound_links,
+     COALESCE(
+       (
+         SELECT jsonb_agg(inbound)
+         FROM (
+           SELECT DISTINCT ON (il.source_artifact_id) jsonb_build_object(
+             'artifact_id', il.source_artifact_id,
+             'url', source.url,
+             'title', source.title,
+             'summary', source.summary
+           ) AS inbound
+           FROM artifact_links il
+             LEFT JOIN artifacts source ON il.source_artifact_id = source.artifact_id
+           WHERE il.target_url = a.url
+           ORDER BY il.source_artifact_id
+           LIMIT max_links
+         ) AS inbound_links
+       ),
+       '[]'::jsonb
+     ) AS inbound_links
+   FROM artifacts a
+   WHERE a.artifact_id = ANY(artifact_ids);
+ END;
+ $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.get_top_level_clusters(target_domain_id uuid)
