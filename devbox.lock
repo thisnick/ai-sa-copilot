@@ -114,6 +114,71 @@
         }
       }
     },
+    "poetry@latest": {
+      "last_modified": "2024-12-17T11:43:56Z",
+      "plugin_version": "0.0.4",
+      "resolved": "github:NixOS/nixpkgs/4989a246d7a390a859852baddb1013f825435cee#poetry",
+      "source": "devbox-search",
+      "version": "1.8.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bm7jdp9fg4iwpgp4mn8wsksf7zjlgjhz-python3.12-poetry-1.8.5",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/pphbkvkrksbp37dsa3c5agwrhys82p6l-python3.12-poetry-1.8.5-dist"
+            }
+          ],
+          "store_path": "/nix/store/bm7jdp9fg4iwpgp4mn8wsksf7zjlgjhz-python3.12-poetry-1.8.5"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/igrb29qk0ljfr7kdz0vk2fq72vpq30rf-python3.12-poetry-1.8.5",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/8sxch1x3gqb7s069jsgwkvn5hyaln5p3-python3.12-poetry-1.8.5-dist"
+            }
+          ],
+          "store_path": "/nix/store/igrb29qk0ljfr7kdz0vk2fq72vpq30rf-python3.12-poetry-1.8.5"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6yzz17481cpcjiwf6wws1dsjhq3iyafn-python3.12-poetry-1.8.5",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/v94y18r66cjhsxa2h7pmdjclcli1a248-python3.12-poetry-1.8.5-dist"
+            }
+          ],
+          "store_path": "/nix/store/6yzz17481cpcjiwf6wws1dsjhq3iyafn-python3.12-poetry-1.8.5"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/n49q4qj0k1jq153rx6pq2bmv3hda64db-python3.12-poetry-1.8.5",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/fa752q0bmmgw3c5ysgpqbw31afx3nkhm-python3.12-poetry-1.8.5-dist"
+            }
+          ],
+          "store_path": "/nix/store/n49q4qj0k1jq153rx6pq2bmv3hda64db-python3.12-poetry-1.8.5"
+        }
+      }
+    },
     "postgresql@latest": {
       "last_modified": "2024-12-03T12:40:06Z",
       "plugin_version": "0.0.2",

@@ -4,7 +4,8 @@
     "nodejs@latest",
     "pnpm@latest",
     "python312@latest",
-    "postgresql@latest"
+    "postgresql@latest",
+    "poetry@latest"
   ],
   "shell": {
     "init_hook": [
