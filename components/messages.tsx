@@ -4,7 +4,6 @@ import { useScrollToBottom } from './use-scroll-to-bottom';
 import { Overview } from "./overview"
 // import { UIBlock } from './block';
 import { Dispatch, memo, SetStateAction, useEffect } from 'react';
-import equal from 'fast-deep-equal';
 import { UIBlock } from './block';
 
 interface MessagesProps {

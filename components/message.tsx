@@ -13,8 +13,6 @@ import { SparklesIcon } from './icons';
 import { Markdown } from './markdown';
 import equal from 'fast-deep-equal';
 import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const PurePreviewMessage = ({
   chatId,
