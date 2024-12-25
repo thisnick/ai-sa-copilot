@@ -18,7 +18,7 @@ export const Overview = () => {
           <MessageIcon size={32} />
         </p>
         <p>
-          This tool demonstrates creating comprehensive run books by analyzing a product's documentation.
+          This tool demonstrates creating comprehensive run books by analyzing a product{"ߴ"}s documentation.
           It researches and synthesizes the documentation and put them together as a single run book.
         </p>
         <p>

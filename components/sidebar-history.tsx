@@ -43,7 +43,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Tables } from '@/lib/supabase/database.types';
-import { fetcher } from '@/lib/utils';
 import { deleteThread, getChatHistory } from './side-bar-history-actions';
 
 type Thread = Tables<'threads'>;

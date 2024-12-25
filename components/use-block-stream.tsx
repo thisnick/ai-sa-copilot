@@ -63,5 +63,5 @@ export function useBlockStream({
         return updatedBlock;
       });
     }
-  }, [streamingData, setBlock]);
+  }, [streamingData, setBlock, setTitle]);
 }
