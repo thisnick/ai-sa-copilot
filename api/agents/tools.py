@@ -4,8 +4,7 @@ import os
 from typing import Dict, List, Literal, Optional, TypedDict
 
 from litellm import cast
-from nomic.embed import text as embed_text
-from supabase import AsyncClient
+from api.lib.nomic import NomicEmbeddings
 
 from api.db.types import TopLevelCluster
 
@@ -119,7 +118,10 @@ async def async_get_artifacts(
   return [ArtifactWithLinks.model_validate(artifact) for artifact in artifacts_response.data]
 
 async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
-  embeddings = embed_text(
+  nomic_api_key = os.getenv("NOMIC_API_KEY")
+  assert nomic_api_key is not None, "NOMIC_API_KEY is not set"
+  embedding_client = NomicEmbeddings(api_key=nomic_api_key)
+  embeddings = await embedding_client.embed_texts(
     texts=queries,
     model='nomic-embed-text-v1.5',
     task_type="search_query",
@@ -133,7 +135,7 @@ async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifac
       "match_count": 4,
       "filter": {}
     }).execute()
-    for embedding in embeddings['embeddings']
+    for embedding in embeddings.embeddings
   ])
 
   # Flatten the responses array and extract data
