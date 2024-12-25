@@ -1,10 +1,7 @@
 import React, { ReactNode, memo } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { visit } from 'unist-util-visit';
-import { Plugin, Transformer } from 'unified';
 import Link from "next/link";
-import { type Node } from 'unist';
 
 const generateSlug = (str: string) => {
   str = str?.replace(/^\s+|\s+$/g, '');
