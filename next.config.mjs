@@ -1,5 +1,17 @@
+import nextMdx from '@next/mdx'
+import remarkGfm from 'remark-gfm';
+
+const withMdx = nextMdx({
+  options: {
+    remarkPlugins: [remarkGfm],
+  },
+});
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const unWrappedNextConfig = {
+  // Add this line:
+  output: 'standalone',
+
   async rewrites() {
     if (process.env.NODE_ENV === "development") {
       return [
@@ -17,5 +29,8 @@ const nextConfig = {
     }
   },
 };
+
+/** @type {import('next').NextConfig} */
+const nextConfig = withMdx(unWrappedNextConfig);
 
 export default nextConfig;
