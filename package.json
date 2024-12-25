@@ -7,7 +7,7 @@
     "fastapi-dev": "fastapi dev api --port 8399 --reload",
     "inngest-dev": "npx inngest-cli@latest dev",
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run inngest-dev\" \"pnpm run fastapi-dev\"",
-    "build": "tsx lib/db/migrate.ts && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
