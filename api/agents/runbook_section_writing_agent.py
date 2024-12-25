@@ -44,13 +44,15 @@ Here is your workflow:
     - The outline of the section you are writing
     - Some supporting artifacts that will help you write the section
     - Core topics and key concepts that the knowledge base contains.
-2. After reviewing, determine whether you have what you need from the artifact to write
-    the section, or you need to retrieve a related artifact. Remember, never make up
-    writing. You should reference only the artifact contents, either in the contexts or retrieved.
+2. After reviewing, determine whether you need to retrieve the actual artifact content or
+   query for additional artifacts to give you more detailed information.
+   Remember, never make up information without retrieving the actual artifact content.
+   Do not rely only on summaries to write the section. You should reference only the
+   artifact contents, either in the contexts or retrieved.
 3. If none of the related artifacts may contain the information you need, you can call
-    `query_for_artifacts` to search for more artifacts, which will give you summaries
-    of the artifacts that are related to the queries. You can use the core topics and
-    key concepts to help you craft queries with more hits.
+   `query_for_artifacts` to search for more artifacts, which will give you summaries
+   of the artifacts that are related to the queries. You can use the knowledge topics and
+   key concepts to help you find the most relevant artifacts.
 4. After you have determined which artifacts you need to write your section, be sure
    to call `retrieve_artifacts` to get the actual contents of the artifacts. You
    should only use the contents from the actual artifacts, not the summaries.
@@ -137,7 +139,7 @@ Remember:
     existing_section_research_artifacts[current_section_idx] = artifacts
 
     return AsyncResult(
-      value="Artifacts retrieved and saved to the prompt",
+      value=f"Artifacts retrieved: {format_artifacts(artifacts, include_links=False, treat_metadata_as_content=False)}",
       context_variables={
         "section_research_artifacts": existing_section_research_artifacts
       }
