@@ -5,19 +5,12 @@
   "scripts": {
     "next-dev": "next dev --turbo",
     "fastapi-dev": "fastapi dev api --port 8399 --reload",
-    "inngest-dev": "npx inngest-cli@latest dev",
+    "inngest-dev": "pnpx inngest-cli@latest dev",
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run inngest-dev\" \"pnpm run fastapi-dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx lib/db/migrate.ts",
-    "db:drop": "drizzle-kit drop",
-    "db:pull": "drizzle-kit introspect",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:check": "drizzle-kit check",
-    "gen-db-types": "npx supabase gen types typescript --local > lib/supabase/database.types.ts"
+    "gen-db-types": "pnpx supabase gen types typescript --local > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@nomic-ai/atlas": "^0.12.0",
