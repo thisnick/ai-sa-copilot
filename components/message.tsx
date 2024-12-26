@@ -1,7 +1,6 @@
 'use client';
 
 import type { ChatRequestOptions, Message } from 'ai';
-import cx from 'classnames';
 import { motion } from 'motion/react';
 import { memo, useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { AgentToolCall, AgentToolResult } from './agent-tool-call';
@@ -113,7 +112,7 @@ export const ThinkingMessage = () => {
       data-role={role}
     >
       <div
-        className={cx(
+        className={cn(
           'flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl',
           {
             'group-data-[role=user]/message:bg-muted': true,

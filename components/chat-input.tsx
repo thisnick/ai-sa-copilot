@@ -6,7 +6,6 @@ import type {
   CreateMessage,
   Message,
 } from 'ai';
-import cx from 'classnames';
 import type React from 'react';
 import {
   useRef,
@@ -27,6 +26,7 @@ import { ArrowUpIcon, StopIcon } from './icons';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { SuggestedActions } from './suggested-actions';
+import { cn } from '@/lib/utils';
 
 function PureChatInput({
   chatId,
@@ -157,7 +157,7 @@ function PureChatInput({
         placeholder="Send a message..."
         value={input}
         onChange={handleInput}
-        className={cx(
+        className={cn(
           'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-xl !text-base bg-muted',
           className,
         )}
