@@ -4,7 +4,6 @@ from .routes.inngest import serve_inngest
 from .routes.chat.stream_messages import router as chat_router
 from .lib.middleware import SupabaseContextMiddleware
 
-settings = Settings()
 app = FastAPI()
 app.add_middleware(SupabaseContextMiddleware)
 
