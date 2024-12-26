@@ -1,2 +1,0 @@
-**/node_modules/@next/swc-darwin-*    # Ignores macOS binaries
-**/node_modules/@next/swc-win32-*     # Ignores Windows binaries
