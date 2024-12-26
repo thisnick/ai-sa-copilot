@@ -16,7 +16,7 @@ pydantic-settings = "^2.6.1"
 litellm = "^1.52.6"
 html2text = "^2024.2.26"
 markdown-it-py = "^3.0.0"
-flex-swarm = "^0.1.0"
+flex-swarm = "^0.1.1"
 gotrue = "^2.11.0"
 fastapi = "^0.115.6"
 
