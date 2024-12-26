@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon } from '@/components/icons'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -36,7 +36,7 @@ function ArticleLinks({ title, links }: { title: string; links: Array<{ title: s
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
             >
               {link.title}
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLinkIcon size={16} />
             </Link>
           </li>
         ))}

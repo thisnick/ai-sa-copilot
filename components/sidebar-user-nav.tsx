@@ -1,5 +1,5 @@
 'use client';
-import { ChevronUp } from 'lucide-react';
+import { ChevronUpIcon } from '@/components/icons';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
@@ -37,7 +37,7 @@ export function SidebarUserNav() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent bg-background data-[state=open]:text-sidebar-accent-foreground h-10">
               <span className="truncate">{profile?.email}</span>
-              <ChevronUp className="ml-auto" />
+              <ChevronUpIcon size={16} />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

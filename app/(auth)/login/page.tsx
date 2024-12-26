@@ -5,7 +5,7 @@ import { ProfileContext } from '@/components/profile-context';
 import { redirect } from 'next/navigation';
 import { useContext } from 'react';
 
-import { BrainCircuit } from 'lucide-react'
+import { BrainCircuitIcon } from '@/components/icons'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 
@@ -21,8 +21,8 @@ export default function SignIn() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <div className="flex items-center justify-center mb-4">
-          <BrainCircuit className="h-12 w-12 text-blue-500" />
+        <div className="flex items-center justify-center mb-4 text-blue-500">
+          <BrainCircuitIcon size={48} />
         </div>
         <CardTitle className="text-2xl font-bold text-center">Run Book Maker</CardTitle>
         <CardDescription className="text-center">

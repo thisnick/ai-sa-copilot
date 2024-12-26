@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { ExternalLink, ChevronRight } from 'lucide-react'
+import { ExternalLinkIcon, ChevronRightIcon } from '@/components/icons'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -34,9 +34,9 @@ function RelatedArtifacts({ artifactIds, savedArtifacts }: { artifactIds: string
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
             >
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRightIcon size={16} />
               {artifact.title}
-              <ExternalLink className="h-3 w-3 ml-1" />
+              <ExternalLinkIcon size={16} />
             </Link>
           </li>
         ))}

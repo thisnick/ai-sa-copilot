@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { type Provider } from '@supabase/supabase-js';
-import { FaGithub } from 'react-icons/fa';
+import { GithubIcon } from '@/components/icons';
 import { JSX, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getURL } from '@/lib/navigation';
@@ -17,7 +17,7 @@ export default function OauthSignIn() {
     {
       name: 'github',
       displayName: 'GitHub',
-      icon: <FaGithub className="h-5 w-5" />
+      icon: <GithubIcon size={16} />
     }
     /* Add desired OAuth providers here */
   ];
