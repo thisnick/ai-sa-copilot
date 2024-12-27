@@ -23,10 +23,10 @@ fastapi = "^0.115.6"
 
 [tool.poetry.group.dev.dependencies]
 ollama = "^0.4.4"
-undetected-playwright = "^0.3.0"
 playwright = "^1.49.1"
 nest-asyncio = "^1.6.0"
 fastapi-cli = "^0.0.7"
+undetected-playwright = "^0.3.0"
 
 [build-system]
 requires = ["poetry-core"]
