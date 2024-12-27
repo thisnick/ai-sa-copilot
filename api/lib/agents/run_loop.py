@@ -6,11 +6,11 @@ from swarm.types import StreamingResponse, AsyncStreamingResponse
 from swarm import AsyncSwarm
 from swarm.types import Message
 
-from api.agents.agent_map import INITIAL_AGENT
-from api.agents.contexts import get_supabase_client_from_context
-from api.agents.intermediate_states import DOMAIN_ID
-from api.config import Settings
-from api.db.types import TopLevelCluster
+from lib.agents.agent_map import INITIAL_AGENT
+from lib.agents.contexts import get_supabase_client_from_context
+from lib.agents.intermediate_states import DOMAIN_ID
+from lib.config import Settings
+from lib.db.types import TopLevelCluster
 from .types import ContextVariables, KnowledgeTopic
 from .agent_factory import create_agent
 from .llm import AsyncLiteLLM

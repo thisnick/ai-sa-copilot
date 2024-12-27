@@ -4,9 +4,9 @@ import os
 from typing import Dict, List, Literal, Optional, TypedDict
 
 from litellm import cast
-from api.lib.nomic import NomicEmbeddings
+from lib.nomic import NomicEmbeddings
 
-from api.db.types import TopLevelCluster
+from lib.db.types import TopLevelCluster
 
 from .types import (
   ArtifactWithLinks,

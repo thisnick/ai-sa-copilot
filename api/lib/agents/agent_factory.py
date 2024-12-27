@@ -1,5 +1,5 @@
 from swarm.types import AsyncAgent
-from api.agents.agent_map import (
+from lib.agents.agent_map import (
   AGENT_RESEARCH_COORDINATOR,
   AGENT_TOPIC_RESEARCH,
   AGENT_RUNBOOK_PLANNING,
@@ -9,7 +9,7 @@ from .research_coordinator_agent import create_research_coordinator_agent
 from .topic_research_agent import create_topic_research_agent
 from .runbook_planning_agent import create_runbook_planning_agent
 from .runbook_section_writing_agent import create_runbook_section_writing_agent
-from api.config import Settings
+from lib.config import Settings
 
 def create_agent(settings: Settings, agent_name: str) -> AsyncAgent:
   if agent_name == AGENT_RESEARCH_COORDINATOR:

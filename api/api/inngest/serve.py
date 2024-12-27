@@ -1,6 +1,6 @@
 import inngest.fast_api
 from fastapi import FastAPI
-from ...lib.inngest import inngest_client
+from lib.inngest import inngest_client
 from .crawler import crawl_url, continue_crawl
 
 def serve_inngest(app: FastAPI):

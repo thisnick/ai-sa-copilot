@@ -6,11 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from supabase import AsyncClient
 
-from api.agents.contexts import get_supabase_client_from_context
-from api.agents.types import ContextVariables
-from api.config import Settings
-from api.db.types import Thread
-from api.agents import stream_response
+from lib.agents.contexts import get_supabase_client_from_context
+from lib.agents.types import ContextVariables
+from lib.config import Settings
+from lib.db.types import Thread
+from lib.agents import stream_response
 from swarm.types import (
     Message,
     AsyncStreamingResponse as AsyncSwarmStreamingResponse,

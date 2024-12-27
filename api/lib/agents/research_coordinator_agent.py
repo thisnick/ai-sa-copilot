@@ -4,7 +4,7 @@ from typing import List
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
 
-from api.config import Settings
+from lib.config import Settings
 from .types import ContextVariables, ResearchTopic
 from .tools import async_get_knowledge_topics, format_knowledge_topics, format_written_sections
 from .agent_map import AGENT_RESEARCH_COORDINATOR

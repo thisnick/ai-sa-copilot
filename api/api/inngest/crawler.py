@@ -5,12 +5,12 @@ from urllib.parse import urljoin, urlparse
 from markdown_it import MarkdownIt
 import re
 
-from ...lib.scraper import WebScraper
+from lib.scraper import WebScraper
 from .events import CrawlRequestedEvent, CrawlRequestedEventData
-from ...lib.inngest import inngest_client
-from ...lib.supabase import create_async_supabase_admin_client
-from ...db.types import Artifact, ArtifactLink
-from ...lib.metadata import ArtifactMetadata, Link
+from lib.inngest import inngest_client
+from lib.supabase import create_async_supabase_admin_client
+from lib.db.types import Artifact, ArtifactLink
+from lib.metadata import ArtifactMetadata, Link
 
 from typing import List, Callable, Coroutine, Protocol
 from .uncrawled_urls import uncrawled_urls

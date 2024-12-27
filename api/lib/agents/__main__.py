@@ -12,8 +12,8 @@ from .intermediate_states import (
 )
 from dotenv import load_dotenv
 
-from api.lib.supabase import create_async_supabase_admin_client
-from api.agents.contexts import with_supabase_client
+from lib.supabase import create_async_supabase_admin_client
+from lib.agents.contexts import with_supabase_client
 load_dotenv()
 
 apply()

@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
 
-from api.config import Settings
+from lib.config import Settings
 
 from .agent_map import AGENT_TOPIC_RESEARCH
 from .types import ArtifactSearchResult, ContextVariables
