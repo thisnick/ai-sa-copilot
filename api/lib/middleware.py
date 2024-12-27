@@ -5,8 +5,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.types import ASGIApp
 
-from api.agents.contexts import set_supabase_client
-from api.lib.supabase import get_server_supabase_client
+from lib.agents.contexts import set_supabase_client
+from lib.supabase import get_server_supabase_client
 
 class SupabaseContextMiddleware(BaseHTTPMiddleware):
   def __init__(self, app: ASGIApp):
