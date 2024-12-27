@@ -215,7 +215,7 @@ async def save_thread_state(
     .execute()
   )
 
-@router.post("/chat/chat")
+@router.post("/api/chat/chat")
 async def stream_messages(
   request: Request,
   protocol: Literal["data", "text"] = "data"
