@@ -1,6 +1,6 @@
 import asyncio
 from dotenv import load_dotenv
-from api.lib.supabase import create_async_supabase_admin_client
+from lib.supabase import create_async_supabase_admin_client
 
 load_dotenv()
 

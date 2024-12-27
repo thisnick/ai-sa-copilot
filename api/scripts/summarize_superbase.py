@@ -10,7 +10,7 @@ from litellm.types.utils import ModelResponse, Choices
 from pydantic import BaseModel, Field
 
 # from concurrent.futures import ThreadPoolExecutor
-from api.lib.supabase import create_async_supabase_admin_client
+from lib.supabase import create_async_supabase_admin_client
 
 load_dotenv()
 

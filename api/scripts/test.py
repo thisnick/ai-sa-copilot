@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import List
 import json
 import os
-from api.lib.scraper import WebScraper
+from lib.scraper import WebScraper
 
 from dotenv import load_dotenv
 load_dotenv(".env")

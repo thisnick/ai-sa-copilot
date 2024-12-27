@@ -1,8 +1,8 @@
 import asyncio
 import uuid
 
-from inngest.crawler import _crawl_url
-from inngest.events import CrawlRequestedEventData
+from api.inngest.crawler import _crawl_url
+from api.inngest.events import CrawlRequestedEventData
 
 
 if __name__ == "__main__":

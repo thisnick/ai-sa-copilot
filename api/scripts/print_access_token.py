@@ -1,5 +1,5 @@
 import asyncio
-from api.lib.supabase import get_server_supabase_client
+from lib.supabase import get_server_supabase_client
 
 async def main():
   supabase = await get_server_supabase_client()
