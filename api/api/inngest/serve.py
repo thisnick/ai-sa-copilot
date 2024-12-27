@@ -8,5 +8,5 @@ def serve_inngest(app: FastAPI):
   app,
   inngest_client,
   [crawl_url, continue_crawl],
-  serve_path="/inngest",
+  serve_path="/api/inngest",
 )
