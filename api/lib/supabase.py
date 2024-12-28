@@ -3,7 +3,7 @@ from abc import ABC
 from supabase import AsyncClient, create_async_client, AsyncClientOptions
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from ..config import Settings
+from lib.config import Settings
 
 settings = Settings()
 security = HTTPBearer()

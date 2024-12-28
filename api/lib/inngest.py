@@ -1,7 +1,7 @@
 import logging
 import inngest
 
-from ..config import Settings
+from lib.config import Settings
 
 settings = Settings()
 
