@@ -95,7 +95,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     ]
     """
     try:
-      list_of_section_outline_adaptor = TypeAdapter(List[RunbookSection])
+      list_of_section_outline_adaptor = TypeAdapter(List[RunbookSectionOutline])
       if isinstance(section_outlines, str):
         section_outlines = json.loads(section_outlines)
 
