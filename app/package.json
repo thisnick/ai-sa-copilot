@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "next-dev": "next dev --turbo",
-    "fastapi-dev": "fastapi dev api --port 8399 --reload",
+    "fastapi-dev": "cd ../api && devbox run poetry run fastapi dev api --port 8399 --reload",
     "inngest-dev": "pnpx inngest-cli@latest dev",
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run inngest-dev\" \"pnpm run fastapi-dev\"",
     "build": "next build",
