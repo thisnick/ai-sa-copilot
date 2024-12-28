@@ -17,11 +17,12 @@ class SupabaseContextMiddleware(BaseHTTPMiddleware):
     try:
       # Try to get credentials using HTTPBearer
       credentials = await self.security(request)
+      # Get the Supabase client with proper credentials
+      supabase = await get_server_supabase_client(credentials)
     except HTTPException:
+      # If credentials are not found, use a anonymous client
       credentials = None
-
-    # Get the Supabase client with proper credentials
-    supabase = await get_server_supabase_client(credentials)
+      supabase = await get_server_supabase_client(None)
 
     # Set the context
     set_supabase_client(supabase)
