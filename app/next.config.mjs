@@ -9,14 +9,14 @@ const nextConfig = {
         destination:
           process.env.NODE_ENV === "development" ?
          'http://127.0.0.1:8399/inngest/:path*':
-         `${process.env.API_BASE_URL}/inngest/:path*`
+         `${process.env.API_BASE_URL}/api/inngest/:path*`
       },
       {
         source: '/api/chat/:path*',
         destination:
           process.env.NODE_ENV === "development" ?
          'http://127.0.0.1:8399/chat/:path*':
-         `${process.env.API_BASE_URL}/chat/:path*`
+         `${process.env.API_BASE_URL}/api/chat/:path*`
       },
     ];
   },
