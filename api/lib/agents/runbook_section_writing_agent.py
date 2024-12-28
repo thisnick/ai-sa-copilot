@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import Any, Dict, List
 
 from swarm import AsyncAgent
@@ -124,52 +125,43 @@ Remember:
     return prompt
 
   async def async_retrieve_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
-    if isinstance(artifact_ids, str):
-      artifact_ids = json.loads(artifact_ids)
+    try:
+      if isinstance(artifact_ids, str):
+        artifact_ids = json.loads(artifact_ids)
 
-    artifacts = await async_get_artifacts(artifact_ids)
+      artifacts = await async_get_artifacts(artifact_ids)
 
-    # saved_artifacts = context_variables.get("saved_artifacts", {}).copy()
-    # current_topic = context_variables["research_topics"][context_variables["current_expansion_topic"]]
-    # existing_artifacts_for_topic = saved_artifacts.get(current_topic.research_question, [])
-    # updated_artifacts = existing_artifacts_for_topic + artifacts
-    # saved_artifacts[current_topic.research_question] = updated_artifacts
-    current_section_idx = context_variables.get("current_runbook_section") or 0
-    existing_section_research_artifacts = context_variables.get("section_research_artifacts") or {}
-    existing_section_research_artifacts[current_section_idx] = artifacts
+      current_section_idx = context_variables.get("current_runbook_section") or 0
+      existing_section_research_artifacts = context_variables.get("section_research_artifacts") or {}
+      existing_section_research_artifacts[current_section_idx] = artifacts
 
-    return AsyncResult(
-      value=f"Artifacts retrieved: {format_artifacts(artifacts, include_links=False, treat_metadata_as_content=False)}",
-      context_variables={
-        "section_research_artifacts": existing_section_research_artifacts
-      }
-    )
+      return AsyncResult(
+        value=f"Artifacts retrieved: {format_artifacts(artifacts, include_links=False, treat_metadata_as_content=False)}",
+        context_variables={
+          "section_research_artifacts": existing_section_research_artifacts
+        }
+      )
+    except Exception as e:
+      logging.error(f"Error in async_retrieve_artifacts: {str(e)}")
+      return AsyncResult(value=f"Error retrieving artifacts: {e}")
 
   async def query_for_artifacts(context_variables: ContextVariables, queries: List[str]):
-    """Query for artifacts that are related to the queries and return their summaries
-
-    Arguments:
-      queries: an array of strings in JSON format, i.e. `["query1", "query2", ...]`. Make sure it is a valid JSON array.
-      If there is only one query, you should still enclose it in an array, i.e. `["query1"]`.
-    """
+    """Query for artifacts that are related to the queries and return their summaries"""
     try:
       if isinstance(queries, str):
         queries = json.loads(queries)
 
       return await async_query_for_artifacts(queries)
     except Exception as e:
+      logging.error(f"Error in query_for_artifacts: {str(e)}")
       return AsyncResult(value=f"Error querying for artifacts: {e}")
 
   async def retrieve_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
-    """Retrieve the contents of the related artifacts.
-
-    Arguments:
-      artifact_ids: an array of related artifact IDs in JSON format,
-        i.e. `["artifact_id1", "artifact_id2", ...]`. Make sure it is formatted as a valid JSON array of strings.
-    """
+    """Retrieve the contents of the related artifacts."""
     try:
       return await async_retrieve_artifacts(context_variables, artifact_ids)
     except Exception as e:
+      logging.error(f"Error in retrieve_artifacts: {str(e)}")
       return AsyncResult(value=f"Error retrieving artifacts: {e}")
 
   async def submit_writing_for_section(
@@ -177,29 +169,23 @@ Remember:
     section_content: str,
     continue_writing_next_section: bool = True
   ) -> AsyncResult:
-    """Write the section content. If there are more sections to write, move on to the next section.
-    Otherwise, save the runbook and hand off the next steps back to the research coordinator agent.
-
-    Arguments:
-      section_content: the content of the section to write in Markdown format.
-      continue_writing_next_section: whether to continue writing the next section or if the user
-      specifically asked you to write only one section, hand off the control back to the
-      research coordinator agent.
-    """
     try:
       current_section_idx = context_variables.get("current_runbook_section", 0)
       all_sections = context_variables.get("runbook_sections", []).copy()
+
+      if not all_sections:
+        logging.warning("No runbook sections found in context")
+        return AsyncResult(value="Error: No runbook sections found in context")
+
       current_section = all_sections[current_section_idx]
       current_section.content = section_content
 
       if current_section_idx + 1 >= len(all_sections) or not continue_writing_next_section:
         if context_variables.get("debug", False):
-          print("Session writing complete", context_variables.get("runbook_sections", {}))
-        # Save all sections to a markdown file
-        # with open("runbook.md", "w") as f:
-        #   f.write("\n\n".join(section.content for section in all_sections))
+          logging.debug("Session writing complete: %s", context_variables.get("runbook_sections", {}))
 
         from .research_coordinator_agent import create_research_coordinator_agent
+        logging.info("All sections complete, handing off to research coordinator")
         return AsyncResult(
           value="Section writing complete. Handing off to research coordinator agent.",
           context_variables={
@@ -209,6 +195,7 @@ Remember:
           agent=create_research_coordinator_agent(settings)
         )
 
+      logging.info(f"Moving to section {current_section_idx + 1}")
       return AsyncResult(
         value=f"Section {current_section_idx + 1} written. Ready to write the next section.",
         context_variables={
@@ -218,6 +205,7 @@ Remember:
         agent=create_runbook_section_writing_agent(settings)
       )
     except Exception as e:
+      logging.error(f"Error in submit_writing_for_section: {str(e)}")
       return AsyncResult(value=f"Error submitting writing for section: {e}")
 
   return AsyncAgent(

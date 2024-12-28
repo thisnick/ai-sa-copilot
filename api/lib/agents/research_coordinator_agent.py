@@ -1,5 +1,6 @@
 from pydantic import TypeAdapter
 from typing import List
+import logging
 
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
@@ -73,6 +74,7 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
         }
       )
     except Exception as e:
+      logging.error(f"Error in save_requirements: {str(e)}")
       return AsyncResult(value=f"Error saving requirements: {e}")
 
   async def kickoff_research(context_variables: ContextVariables, topics: List[ResearchTopic]) -> AsyncResult:
@@ -89,6 +91,7 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     """
 
     if not context_variables.get("user_requirements"):
+      logging.warning("Attempted to kickoff research without user requirements")
       return AsyncResult(
         value="Error: No user requirements to conduct research. Please add user requirements first."
       )
@@ -118,6 +121,7 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
         }
       )
     except Exception as e:
+      logging.error(f"Error in kickoff_research: {str(e)}")
       return AsyncResult(value=f"Error kicking off research: {e}")
 
   async def handoff_to_runbook_planning_agent(context_variables: ContextVariables) -> AsyncResult:
@@ -126,11 +130,13 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     runbook_planning_agent = create_runbook_planning_agent(settings)
 
     if not context_variables.get("saved_artifacts"):
+      logging.warning("Attempted to plan runbook without research materials")
       return AsyncResult(
         value="Error: No research materials to plan the runbook. Please conduct research first."
       )
 
     if not context_variables.get("user_requirements"):
+      logging.warning("Attempted to plan runbook without user requirements")
       return AsyncResult(
         value="Error: No user requirements to plan the runbook. Please add user requirements first."
       )
@@ -145,21 +151,25 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     runbook_section_writing_agent = create_runbook_section_writing_agent(settings)
 
     if not context_variables.get("saved_artifacts"):
+      logging.warning("Attempted to write section without research materials")
       return AsyncResult(
         value="Error: No research materials to write the section. Please conduct research first."
       )
 
     if not context_variables.get("user_requirements"):
+      logging.warning("Attempted to write section without user requirements")
       return AsyncResult(
         value="Error: No user requirements to write the section. Please add user requirements first."
       )
 
     if not context_variables.get("runbook_sections"):
+      logging.warning("Attempted to write section without runbook sections")
       return AsyncResult(
         value="Error: No runbook sections to write the section. Please plan the runbook first."
       )
 
     if section_number > len(context_variables.get("runbook_sections") or []):
+      logging.warning(f"Section number {section_number} is out of range")
       return AsyncResult(
         value="Error: Section number is out of range. Please check the runbook sections and try again."
       )

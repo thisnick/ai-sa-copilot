@@ -4,6 +4,7 @@ from pydantic import TypeAdapter
 from pydantic.json import pydantic_encoder
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
+import logging
 
 from lib.config import Settings
 
@@ -66,6 +67,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     """Hand off the run book outline to the runbook section writing agent to start writing the runbook."""
 
     if len(context_variables.get("runbook_sections") or []) == 0:
+      logging.warning("Attempted to start writing runbook without sections")
       return AsyncResult(
         value="No runbook sections to write. Please create a runbook outline first by calling `create_runbook_outline` first."
       )
@@ -98,6 +100,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
         section_outlines = json.loads(section_outlines)
 
       if len(section_outlines) == 0:
+        logging.warning("Attempted to create runbook outline with empty sections")
         return AsyncResult(
           value="No section outlines to create. Please include the outline in the argument section_outlines."
         )
@@ -105,7 +108,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
       list_of_section_outlines = list_of_section_outline_adaptor.validate_python(section_outlines)
 
       if context_variables.get("debug", False):
-        print("List of section outlines: ", list_of_section_outlines)
+        logging.debug("List of section outlines: %s", list_of_section_outlines)
 
       return AsyncResult(
         value="Outline created successfully",
@@ -114,11 +117,13 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
         }
       )
     except Exception as e:
+      logging.error(f"Error creating runbook outline: {str(e)}")
       return AsyncResult(value=f"Error creating runbook outline: {e}")
 
   async def handoff_to_research_coordinator_agent(context_variables: ContextVariables):
     """Hand off the control back to the research coordinator agent, who can perform tasks
     such as researching for a topic."""
+    logging.info("Handing off to research coordinator agent")
     from .research_coordinator_agent import create_research_coordinator_agent
     return AsyncResult(
       agent=create_research_coordinator_agent(settings),

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from typing import Any, Dict, List, Literal
+import logging
 
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
@@ -76,6 +77,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
         queries = json.loads(queries)
       return await async_query_for_artifacts(queries)
     except Exception as e:
+      logging.error(f"Error in query_for_artifacts: {str(e)}")
       return f"Error querying for artifacts: {e}"
 
 
@@ -104,6 +106,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
         }
       )
     except Exception as e:
+      logging.error(f"Error in save_artifacts: {str(e)}")
       return AsyncResult(value=f"Error saving artifacts: {e}")
 
   async def finish_research(
@@ -137,6 +140,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
         agent=create_topic_research_agent(settings)
       )
     except Exception as e:
+      logging.error(f"Error in finish_research: {str(e)}")
       return AsyncResult(value=f"Error finishing research: {e}")
 
   return AsyncAgent(
