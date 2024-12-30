@@ -17,7 +17,7 @@ interface RunbookOutlineProps {
 
 function RelatedArtifacts({ artifactIds, savedArtifacts }: { artifactIds: string[], savedArtifacts: Record<string, ArtifactWithLinks[]> }) {
   const artifacts = artifactIds.flatMap(id =>
-    Object.values(savedArtifacts).flat().filter(artifact => artifact.artifact_id || artifact.artifact_content_id === id)
+    Object.values(savedArtifacts).flat().filter(artifact => artifact.artifact_id === id || artifact.artifact_content_id === id)
   );
 
   if (artifacts.length === 0) return null;

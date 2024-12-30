@@ -1,4 +1,3 @@
-
 export type DBMessageToolCall = {
   function: {
     name: string
@@ -34,6 +33,7 @@ export interface ArtifactSummary {
 }
 
 export interface ArtifactWithLinks extends ArtifactSummary {
+  /** @deprecated Use artifact_content_id instead */
   artifact_id?: string;
   artifact_content_id?: string;
   parsed_text: string;
