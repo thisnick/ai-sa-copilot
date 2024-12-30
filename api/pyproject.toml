@@ -19,6 +19,7 @@ markdown-it-py = "^3.0.0"
 flex-swarm = "^0.1.1"
 gotrue = "^2.11.0"
 fastapi = "^0.115.6"
+beautifulsoup4 = "^4.12.3"
 
 
 [tool.poetry.group.dev.dependencies]

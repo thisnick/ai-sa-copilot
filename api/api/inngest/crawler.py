@@ -1,4 +1,4 @@
-from typing import List, Callable, Coroutine
+from typing import List, Callable, Coroutine, cast
 import inngest
 from supabase import AsyncClient
 from urllib.parse import urljoin, urlparse
@@ -9,7 +9,7 @@ from lib.scraper import WebScraper
 from .events import CrawlRequestedEvent, CrawlRequestedEventData
 from lib.inngest import inngest_client
 from lib.supabase import create_async_supabase_admin_client
-from lib.db.types import Artifact, ArtifactLink
+from lib.db.types import Artifact, ArtifactDomain, ArtifactLink
 from lib.metadata import ArtifactMetadata, Link
 
 from typing import List, Callable, Coroutine, Protocol
@@ -23,26 +23,6 @@ MAX_CRAWL_DEPTH = 5
 DATABRICK_ALLOWED_URL_PATTERNS = [
   "^https:\\/\\/docs\\.databricks\\.com\\/en\\/.*$"
 ]
-
-@inngest_client.create_function(
-  fn_id="continue-crawl",
-  trigger=inngest.TriggerEvent(event="one-off/continue-crawl"),
-)
-async def continue_crawl(ctx: inngest.Context, step: inngest.Step):
-  supabase = await create_async_supabase_admin_client()
-
-  event_payload = [
-    CrawlRequestedEvent(data=CrawlRequestedEventData(
-      url=url["url"],
-      crawl_depth=url["crawl_depth"],
-      allowed_url_patterns=DATABRICK_ALLOWED_URL_PATTERNS
-    )).to_event() for url in uncrawled_urls
-  ]
-  event_ids = await step.send_event(
-    "send-crawl-events",
-    event_payload
-  )
-  return {"event_ids": event_ids}
 
 @inngest_client.create_function(
   fn_id="crawl",
@@ -88,13 +68,33 @@ async def _crawl_url(
 ):
   assert crawl_request.crawl_depth is not None, "Crawl depth is required"
   assert crawl_request.url is not None, "URL is required"
-  assert crawl_request.allowed_url_patterns and len(crawl_request.allowed_url_patterns) > 0, "Allowed URL patterns must be non-empty"
-
-  if crawl_request.crawl_depth > MAX_CRAWL_DEPTH:
-    print(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {MAX_CRAWL_DEPTH}, skipping")
-    return
+  assert crawl_request.domain_id is not None, "Domain ID is required"
 
   admin_supabase = await create_async_supabase_admin_client()
+
+  crawl_domain_response = await (
+    admin_supabase
+    .table("artifact_domains")
+    .select("*")
+    .eq("domain_id", crawl_request.domain_id)
+    .maybe_single()
+    .execute()
+  )
+  if not crawl_domain_response:
+    print(f"Domain {crawl_request.domain_id} not found")
+    raise inngest.NoDataError(f"Domain {crawl_request.domain_id} not found")
+
+  artifact_domain = cast(ArtifactDomain, crawl_domain_response.data)
+
+  if not artifact_domain.get("crawl_config"):
+    print(f"Domain {crawl_request.domain_id} does not have a crawl config")
+    raise inngest.NoDataError(f"Domain {crawl_request.domain_id} does not have a crawl config")
+
+  max_crawl_depth = artifact_domain["crawl_config"].get("crawl_depth", MAX_CRAWL_DEPTH)
+
+  if crawl_request.crawl_depth > max_crawl_depth:
+    print(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {max_crawl_depth}, skipping")
+    return
 
   existing_artifact_response = await admin_supabase\
     .table("artifacts")\
@@ -121,7 +121,8 @@ async def _crawl_url(
       {
         "crawl_status": "scraping",
         "crawl_depth": crawl_request.crawl_depth,
-        "url": crawl_request.url
+        "url": crawl_request.url,
+        "domain_id": crawl_request.domain_id
       },
       on_conflict="url"
     )\
@@ -134,7 +135,7 @@ async def _crawl_url(
   scrape_response = await scraper.async_scrape(
     crawl_request.url,
     ArtifactMetadata,
-    "Extract the title, summary, abd main_sections."
+    "Extract the title, summary, and main_sections."
   )
 
   crawl_links_response = await _crawl_links(
@@ -153,6 +154,7 @@ async def _crawl_url(
   updated_article_response = await admin_supabase\
     .table("artifacts")\
     .update({
+      "domain_id": crawl_request.domain_id,
       "crawl_depth": crawl_request.crawl_depth,
       "crawl_status": "scraped",
       "metadata": scrape_response.extracted_data.model_dump(mode='json'),
@@ -269,23 +271,49 @@ async def _crawl_links(
     .execute()
 
   # Extract and process new links
-  links = await _extract_links(
+  links = (await _extract_links(
     parsed_content,
     base_crawl_event.url,
     base_crawl_event.allowed_url_patterns
+  ))[:100]
+
+  existing_artifact_response = await (
+    admin_supabase
+    .table("artifacts")
+    .select("*")
+    .in_("url", [link.url for link in links])
+    .limit(100)
+    .execute()
   )
 
-  event_payload = [
-    CrawlRequestedEventData(
-      url=link.url,
+  # Filter out links that either exist with lower/equal crawl depth
+  if existing_artifact_response.data:
+    existing_artifacts = [cast(Artifact, artifact) for artifact in existing_artifact_response.data]
+    links = [
+      link
+      for link in links
+      if not any(
+        artifact["url"] == link.url and
+        artifact["crawl_depth"] <= base_crawl_event.crawl_depth + 1
+        for artifact in existing_artifacts
+      )
+    ]
+
+  if base_crawl_event.crawl_depth + 1 <= MAX_CRAWL_DEPTH:
+    event_payload = [
+      CrawlRequestedEventData(
+        url=link.url,
       crawl_depth=base_crawl_event.crawl_depth + 1,
-      allowed_url_patterns=base_crawl_event.allowed_url_patterns
-    ) for link in links if base_crawl_event.crawl_depth + 1 <= MAX_CRAWL_DEPTH
-  ]
-  event_ids = await schedule_crawl(
-    step_id=f"crawl-outbound-links",
-    crawl_request=event_payload
-  )
+        domain_id=base_crawl_event.domain_id,
+      ) for link in links
+    ]
+
+    event_ids = await schedule_crawl(
+      step_id=f"crawl-outbound-links",
+      crawl_request=event_payload
+    )
+  else:
+    event_ids = []
 
   # Prepare and insert new links
   insert_payload = [

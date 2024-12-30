@@ -28,13 +28,14 @@ export type DBMessage = {
   tool_name: string
 }
 export interface ArtifactSummary {
-  artifact_id: string;
   url: string;
   title: string;
   summary: string;
 }
 
 export interface ArtifactWithLinks extends ArtifactSummary {
+  artifact_id?: string;
+  artifact_content_id?: string;
   parsed_text: string;
   metadata: Record<string, any> | null;
   outbound_links: ArtifactSummary[] | null;

@@ -69,6 +69,50 @@ export type Database = {
           },
         ]
       }
+      artifact_contents: {
+        Row: {
+          anchor_id: string | null
+          artifact_content_id: string
+          artifact_id: string
+          created_at: string
+          metadata: Json | null
+          parsed_text: string
+          summary: string
+          summary_embedding: string
+          title: string | null
+        }
+        Insert: {
+          anchor_id?: string | null
+          artifact_content_id?: string
+          artifact_id: string
+          created_at?: string
+          metadata?: Json | null
+          parsed_text: string
+          summary: string
+          summary_embedding: string
+          title?: string | null
+        }
+        Update: {
+          anchor_id?: string | null
+          artifact_content_id?: string
+          artifact_id?: string
+          created_at?: string
+          metadata?: Json | null
+          parsed_text?: string
+          summary?: string
+          summary_embedding?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artifact_contents_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "artifacts"
+            referencedColumns: ["artifact_id"]
+          },
+        ]
+      }
       artifact_domains: {
         Row: {
           crawl_config: Json
@@ -95,30 +139,30 @@ export type Database = {
           anchor_text: string
           created_at: string
           id: string
-          source_artifact_id: string
+          source_artifact_content_id: string
           target_url: string
         }
         Insert: {
           anchor_text?: string
           created_at?: string
           id?: string
-          source_artifact_id: string
+          source_artifact_content_id: string
           target_url: string
         }
         Update: {
           anchor_text?: string
           created_at?: string
           id?: string
-          source_artifact_id?: string
+          source_artifact_content_id?: string
           target_url?: string
         }
         Relationships: [
           {
-            foreignKeyName: "artifact_links_source_artifact_id_fkey"
-            columns: ["source_artifact_id"]
+            foreignKeyName: "artifact_links_source_artifact_content_id_fkey"
+            columns: ["source_artifact_content_id"]
             isOneToOne: false
-            referencedRelation: "artifacts"
-            referencedColumns: ["artifact_id"]
+            referencedRelation: "artifact_contents"
+            referencedColumns: ["artifact_content_id"]
           },
         ]
       }
@@ -132,7 +176,6 @@ export type Database = {
           metadata: Json | null
           parsed_text: string | null
           summary: string | null
-          summary_embedding: string | null
           title: string | null
           url: string
         }
@@ -145,7 +188,6 @@ export type Database = {
           metadata?: Json | null
           parsed_text?: string | null
           summary?: string | null
-          summary_embedding?: string | null
           title?: string | null
           url: string
         }
@@ -158,7 +200,6 @@ export type Database = {
           metadata?: Json | null
           parsed_text?: string | null
           summary?: string | null
-          summary_embedding?: string | null
           title?: string | null
           url?: string
         }
@@ -171,6 +212,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      artifacts_backup: {
+        Row: {
+          artifact_id: string | null
+          crawl_depth: number | null
+          crawl_status: Database["public"]["Enums"]["enum_crawl_status"] | null
+          created_at: string | null
+          domain_id: string | null
+          metadata: Json | null
+          parsed_text: string | null
+          summary: string | null
+          summary_embedding: string | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          artifact_id?: string | null
+          crawl_depth?: number | null
+          crawl_status?: Database["public"]["Enums"]["enum_crawl_status"] | null
+          created_at?: string | null
+          domain_id?: string | null
+          metadata?: Json | null
+          parsed_text?: string | null
+          summary?: string | null
+          summary_embedding?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          artifact_id?: string | null
+          crawl_depth?: number | null
+          crawl_status?: Database["public"]["Enums"]["enum_crawl_status"] | null
+          created_at?: string | null
+          domain_id?: string | null
+          metadata?: Json | null
+          parsed_text?: string | null
+          summary?: string | null
+          summary_embedding?: string | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: []
       }
       cluster_summaries: {
         Row: {
@@ -329,11 +412,12 @@ export type Database = {
       }
       get_artifacts_with_links: {
         Args: {
-          artifact_ids: string[]
+          artifact_content_ids: string[]
           max_links?: number
         }
         Returns: {
           artifact_id: string
+          artifact_content_id: string
           url: string
           title: string
           summary: string
@@ -376,10 +460,12 @@ export type Database = {
         }
         Returns: {
           artifact_id: string
+          artifact_content_id: string
           metadata: Json
           title: string
           summary: string
           summary_embedding: string
+          anchor_id: string
           url: string
           similarity: number
         }[]

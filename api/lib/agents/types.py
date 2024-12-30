@@ -3,12 +3,12 @@ from pydantic import BaseModel, Field
 
 
 class ArtifactSummary(BaseModel):
-  artifact_id: str
   url: str
   title: str
   summary: str
 
 class ArtifactWithLinks(ArtifactSummary):
+  artifact_content_id: str
   parsed_text: str
   metadata: Optional[Dict[str, Any]] = None
   outbound_links: Optional[List[ArtifactSummary]] = None
@@ -26,7 +26,7 @@ class KnowledgeTopic(BaseModel):
 class RunbookSectionOutline(BaseModel):
   section_title: str = Field(description="The title of the section")
   outline: str = Field(description="A high-level outline of the section")
-  related_artifacts: List[str] = Field(description="A list of artifact IDs that are related to this section")
+  related_artifacts: List[str] = Field(description="A list of artifact content IDs that are related to this section")
 
 class RunbookSection(RunbookSectionOutline):
   content: str | None = Field(default=None, description="The content of the section")
@@ -45,10 +45,11 @@ class ContextVariables(TypedDict, total=False):
 
 
 class ArtifactSearchResult(TypedDict):
-  artifact_id: str
+  artifact_content_id: str
   url: str
   title: str
   summary: str
+  anchor_id: Optional[str]
   similarity: float
   main_sections: List[str]
 
