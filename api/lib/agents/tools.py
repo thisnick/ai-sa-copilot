@@ -50,7 +50,7 @@ def format_related_artifacts(artifact: ArtifactWithLinks) -> str:
   outbound_links = (
     "\n".join(
       [
-        f"- Title: {link.title}\n  Artifact ID: {link.artifact_id}\n  Summary: {link.summary}"
+        f"- Title: {link.title}\n Summary: {link.summary}"
         for link in artifact.outbound_links or []
       ]
     )
@@ -58,7 +58,7 @@ def format_related_artifacts(artifact: ArtifactWithLinks) -> str:
   )
   inbound_links = (
     "\n".join([
-      f"- Title: {link.title}\n  Artifact ID: {link.artifact_id}\n  Summary: {link.summary}"
+      f"- Title: {link.title}\n Summary: {link.summary}"
       for link in artifact.inbound_links or []
     ])
     or "None"
@@ -76,7 +76,7 @@ def format_artifact(artifact: ArtifactWithLinks, include_links: bool = False, tr
 
   return f"""# Title: {artifact.title}
 
- - Artifact ID: {artifact.artifact_id}
+ - Artifact Content ID: {artifact.artifact_content_id}
  - URL: {artifact.url}
 
 {content}
@@ -107,12 +107,12 @@ def format_runbook_section_outline(section: RunbookSection) -> str:
   return f"## Section Title: {section.section_title}\n\n## Outline:\n{section.outline}"
 
 async def async_get_artifacts(
-  artifact_ids: List[str]
+  artifact_content_ids: List[str]
 ) -> List[ArtifactWithLinks]:
   supabase = get_supabase_client_from_context()
   artifacts_response = await (
     supabase
-    .rpc("get_artifacts_with_links", { "artifact_ids": artifact_ids })
+    .rpc("get_artifacts_with_links", { "artifact_content_ids": artifact_content_ids })
     .execute()
   )
   return [ArtifactWithLinks.model_validate(artifact) for artifact in artifacts_response.data]
@@ -141,12 +141,13 @@ async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifac
   # Flatten the responses array and extract data
   flattened_responses : List[ArtifactSearchResult] = [
     {
-      "artifact_id": item["artifact_id"],
+      "artifact_content_id": item["artifact_content_id"],
       "url": item["url"],
       "title": item["title"],
       "summary": item["summary"],
       "similarity": item["similarity"],
-      "main_sections": item.get("metadata", {}).get("main_sections", [])
+      "main_sections": item.get("metadata", {}).get("main_sections", []),
+      "anchor_id": item.get("anchor_id")
     }
     for response in responses
     for item in response.data

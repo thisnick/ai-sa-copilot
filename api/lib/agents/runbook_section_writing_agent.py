@@ -124,12 +124,12 @@ Remember:
     """
     return prompt
 
-  async def async_retrieve_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
+  async def async_retrieve_artifacts(context_variables: ContextVariables, artifact_content_ids: List[str]) -> AsyncResult:
     try:
-      if isinstance(artifact_ids, str):
-        artifact_ids = json.loads(artifact_ids)
+      if isinstance(artifact_content_ids, str):
+        artifact_content_ids = json.loads(artifact_content_ids)
 
-      artifacts = await async_get_artifacts(artifact_ids)
+      artifacts = await async_get_artifacts(artifact_content_ids)
 
       current_section_idx = context_variables.get("current_runbook_section") or 0
       existing_section_research_artifacts = context_variables.get("section_research_artifacts") or {}
@@ -156,10 +156,10 @@ Remember:
       logging.error(f"Error in query_for_artifacts: {str(e)}")
       return AsyncResult(value=f"Error querying for artifacts: {e}")
 
-  async def retrieve_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
+  async def retrieve_artifacts(context_variables: ContextVariables, artifact_content_ids: List[str]) -> AsyncResult:
     """Retrieve the contents of the related artifacts."""
     try:
-      return await async_retrieve_artifacts(context_variables, artifact_ids)
+      return await async_retrieve_artifacts(context_variables, artifact_content_ids)
     except Exception as e:
       logging.error(f"Error in retrieve_artifacts: {str(e)}")
       return AsyncResult(value=f"Error retrieving artifacts: {e}")

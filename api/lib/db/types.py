@@ -18,21 +18,34 @@ class Artifact(TypedDict):
   metadata: dict
   parsed_text: str
   summary: str
-  summary_embedding: str
   title: str
   url: str
+
+class ArtifactContent(TypedDict):
+  artifact_content_id: str
+  artifact_id: str
+  created_at: str
+  metadata: dict
+  parsed_text: str
+  summary: str
+  title: str
+  anchor_id: str
 
 class ArtifactLink(TypedDict):
   anchor_text: str
   created_at: str
   id: str
-  source_artifact_id: str
+  source_artifact_content_id: str
   target_url: str
+
+class CrawlConfig(TypedDict):
+  crawl_depth: int
+  allowed_url_patterns: list[str]
 
 class ArtifactDomain(TypedDict):
   id: str
   name: str
-  crawl_config: dict
+  crawl_config: CrawlConfig
   created_at: str
 
 class ArtifactCluster(TypedDict):

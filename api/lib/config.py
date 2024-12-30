@@ -9,6 +9,7 @@ class Settings(BaseSettings):
   groq_api_key: str = ""
   agent_llm_model: str = ""
   nomic_api_key: str = ""
+  scraping_fish_api_key: str = ""
 
   model_config = SettingsConfigDict(env_file=".env", extra="allow")
 

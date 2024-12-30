@@ -90,7 +90,7 @@ export function DocumentationViewer({ savedArtifacts }: DocumentationViewerProps
               </AccordionTrigger>
               <AccordionContent className="grid gap-4 rounded-b-lg border border-t-0 p-4 pt-4">
                 {artifacts.map((artifact) => (
-                  <Article key={artifact.artifact_id} artifact={artifact} />
+                  <Article key={artifact.artifact_id || artifact.artifact_content_id} artifact={artifact} />
                 ))}
               </AccordionContent>
             </AccordionItem>

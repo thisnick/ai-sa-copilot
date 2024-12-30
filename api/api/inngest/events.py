@@ -26,7 +26,7 @@ class BaseEvent(BaseModel):
 class CrawlRequestedEventData(BaseModel):
   url: str = Field(description="The URL to crawl")
   crawl_depth: int = Field(description="The depth of the crawl")
-  allowed_url_patterns: List[str] = Field(description="The the URL patterns that the crawler should follow")
+  domain_id: str = Field(description="The ID of the domain to crawl")
 
 class CrawlRequestedEvent(BaseEvent):
   data: CrawlRequestedEventData

@@ -81,17 +81,17 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
       return f"Error querying for artifacts: {e}"
 
 
-  async def save_artifacts(context_variables: ContextVariables, artifact_ids: List[str]) -> AsyncResult:
+  async def save_artifacts(context_variables: ContextVariables, artifact_content_ids: List[str]) -> AsyncResult:
     """Saves the *relevant* artifacts to the research context. Limit the number of artifacts saved to no more than 5.
 
     Arguments:
-      artifact_ids: an array of artifact IDs in JSON format, i.e. `["artifact_id1", "artifact_id2", ...]`. Make sure it is a valid JSON array.
+      artifact_content_ids: an array of artifact content IDs in JSON format, i.e. `["artifact_content_id1", "artifact_content_id2", ...]`. Make sure it is a valid JSON array.
     """
     try:
-      if isinstance(artifact_ids, str):
-        artifact_ids = json.loads(artifact_ids)
+      if isinstance(artifact_content_ids, str):
+        artifact_content_ids = json.loads(artifact_content_ids)
 
-      artifacts = await async_get_artifacts(artifact_ids)
+      artifacts = await async_get_artifacts(artifact_content_ids)
       current_topic_idx = context_variables.get("current_research_topic") or 0
       current_topic = (context_variables.get("research_topics") or [])[current_topic_idx]
       remaining_topics = (context_variables.get("research_topics") or [])[current_topic_idx + 1:]

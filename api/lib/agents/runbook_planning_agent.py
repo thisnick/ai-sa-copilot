@@ -89,7 +89,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
       {
         "section_title": "Step 1: Set up Databricks IAM on AWS",
         "outline": "- Goals: Set up Databricks IAM on AWS\n- High level steps: 1. Create an IAM role for Databricks\n2. Attach the necessary policies to the role\n3. Create an IAM user in Databricks with the role",
-        "related_artifacts": ["artifact_id1", "artifact_id2", ...]
+        "related_artifacts": ["artifact_content_id1", "artifact_content_id2", ...]
       },
       ...
     ]
