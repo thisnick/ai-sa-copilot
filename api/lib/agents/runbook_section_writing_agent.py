@@ -118,7 +118,7 @@ Remember:
 
 {format_topic_artifacts(saved_artifacts or {}, treat_metadata_as_content=True, include_links=True)}
 
-# Specific artifacts contents already looked up for this section:
+# Full text of retrieved artifacts:
 
 {format_artifacts(section_research_artifacts, include_links=False, treat_metadata_as_content=False)}
     """
@@ -136,7 +136,7 @@ Remember:
       existing_section_research_artifacts[current_section_idx] = artifacts
 
       return AsyncResult(
-        value=f"Artifacts retrieved: {format_artifacts(artifacts, include_links=False, treat_metadata_as_content=False)}",
+        value=f"Artifacts (ids: {artifact_content_ids}) retrieved. They are available to you in the system instructions in the 'Full text of retrieved artifacts' section.",
         context_variables={
           "section_research_artifacts": existing_section_research_artifacts
         }
