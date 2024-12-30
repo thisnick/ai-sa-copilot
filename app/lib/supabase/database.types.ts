@@ -338,6 +338,7 @@ export type Database = {
           title: string
           summary: string
           parsed_text: string
+          metadata: Json
           outbound_links: Json
           inbound_links: Json
         }[]
