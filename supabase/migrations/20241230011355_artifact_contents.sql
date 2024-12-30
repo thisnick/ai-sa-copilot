@@ -35,20 +35,24 @@ SELECT * FROM public.artifacts;
 INSERT
 INTO
   public.artifact_contents (
+    artifact_content_id,
     artifact_id,
     created_at,
     metadata,
     parsed_text,
     title,
-    summary
+    summary,
+    summary_embedding
   )
 SELECT
+  artifact_id,
   artifact_id,
   created_at,
   metadata,
   parsed_text,
   title,
-  summary
+  summary,
+  summary_embedding
 FROM
   public.artifacts
 WHERE
