@@ -8,7 +8,11 @@ class ArtifactSummary(BaseModel):
   summary: str
 
 class ArtifactWithLinks(ArtifactSummary):
-  artifact_id: Optional[str] = None
+  artifact_id: Optional[str] = Field(
+    default=None,
+    deprecated=True,
+    description="Deprecated: Use artifact_content_id instead"
+  )
   artifact_content_id: Optional[str] = None
   parsed_text: str
   metadata: Optional[Dict[str, Any]] = None
