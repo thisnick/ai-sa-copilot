@@ -8,6 +8,7 @@ class ArtifactSummary(BaseModel):
   summary: str
 
 class ArtifactWithLinks(ArtifactSummary):
+  artifact_id: Optional[str] = None
   artifact_content_id: Optional[str] = None
   parsed_text: str
   metadata: Optional[Dict[str, Any]] = None
