@@ -15,11 +15,13 @@ class Artifact(TypedDict):
   crawl_depth: int
   crawl_status: CrawlStatus
   created_at: str
-  metadata: dict
-  parsed_text: str
-  summary: str
-  title: str
+  metadata: Optional[dict]
+  parsed_text: Optional[str]
+  summary: Optional[str]
+  title: Optional[str]
   url: str
+  content_sha256: Optional[str]
+  crawled_as_artifact_id: Optional[str]
 
 class ArtifactContent(TypedDict):
   artifact_content_id: str
@@ -28,8 +30,9 @@ class ArtifactContent(TypedDict):
   metadata: dict
   parsed_text: str
   summary: str
+  summary_embedding: str
   title: str
-  anchor_id: str
+  anchor_id: Optional[str]
 
 class ArtifactLink(TypedDict):
   anchor_text: str

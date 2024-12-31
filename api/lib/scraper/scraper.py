@@ -2,42 +2,8 @@
 Simple web scraper with LLM integration
 """
 import asyncio
-from typing import AsyncGenerator, Literal, Optional, Dict, Any, List, Type, TypeAlias, TypeVar, Generic, LiteralString, Union
-from pydantic import BaseModel
-from pydantic_core import to_json as pydantic_to_json
-
-T = TypeVar('T', bound=BaseModel)
-
-class ScrapedLink(BaseModel):
-  url: str
-  anchor_text: str
-
-class ScrapedContent(BaseModel):
-  id: Optional[str] = None
-  content: str
-  title: str
-  extracted_data: Optional[T] = None
-  scraped_links: List[ScrapedLink] = []
-
-class WebScraperResult(BaseModel, Generic[T]):
-  url: str
-  page_title: str
-  page_content: str
-  scraped_sections: List[ScrapedContent]
-
-ScraperType : TypeAlias = Literal['playwright', 'scraping_fish']
-
-class ScrapingConfig(BaseModel, Generic[T]):
-  splitting_selector: List[str] = [
-    'html',
-    'article',
-    'section',
-  ]
-  max_chunk_size: int = 50000
-  title_selector: str = 'title, h1, h2, h3'
-  section_id_selector: Optional[str] = None
-  schema: Type[T]
-  prompt: str
+from typing import AsyncGenerator, Optional, Dict, Any, List, Type
+from .types import ScrapedLink, ScrapedContent, WebScraperResult, ScraperType, ScrapingConfig
 
 class WebScraper():
 
@@ -157,13 +123,18 @@ class WebScraper():
     self,
     html_content: str,
     base_url: str,
-    scraping_config: ScrapingConfig[T],
+    scraping_config: ScrapingConfig,
     split_depth: int = 0,
     id_counter: int = 0
   ) -> AsyncGenerator[ScrapedContent, None]:
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(html_content, 'html.parser')
-    for section in soup.select(scraping_config.splitting_selector[split_depth]):
+    sections = soup.select(scraping_config.splitting_selector[split_depth])
+    if not sections and split_depth < len(scraping_config.splitting_selector) - 1:
+      async for subsection in self.extract_page_sections(html_content, base_url, scraping_config, split_depth + 1, id_counter):
+        yield subsection
+
+    for section in sections:
       section_content = str(section)
       if not section_content:
         continue
@@ -223,47 +194,11 @@ class WebScraper():
 
     return text_content
 
-  async def async_extract_data(self, parsed_content: str, title: str, schema: Type[T], prompt: str) -> T:
-    """Extract structured data using LiteLLM"""
-    import json
-    from litellm import acompletion
-
-    if self.verbose:
-      print("Extracting data using LLM...")
-
-    # Prepare the message for the LLM
-    system_prompt = f"""You are a web scraping assistant. Extract information according to the provided schema.
-Follow these instructions:
-{prompt}"""
-
-    messages = [
-      {"role": "system", "content": system_prompt},
-      {"role": "user", "content": f"Page Title: {title}\n\nContent:\n{parsed_content}"}
-    ]
-
-    # Call LiteLLM with response format
-    response = await acompletion(
-      model=self.model,
-      messages=messages,
-      temperature=0.7,
-      max_tokens=1500,
-      response_format=schema,
-      api_base=self.model_api_base,
-      api_key=self.model_api_key,
-    )
-
-    # Parse and validate the response
-    try:
-      raw_result = json.loads(response.choices[0].message.content)
-      # Validate against the schema
-      result = schema.model_validate(raw_result)
-      return result
-    except Exception as e:
-      if self.verbose:
-        print(f"Warning: Failed to parse or validate LLM response: {e}")
-      raise ValueError(f"Failed to parse or validate LLM response: {e}")
-
-  async def async_scrape(self, url: str, scraping_config: ScrapingConfig[T]) -> WebScraperResult[T]:
+  async def async_scrape(
+    self,
+    url: str,
+    scraping_config: ScrapingConfig
+  ) -> WebScraperResult:
     """Async version of the main scraping method"""
     # 1. Fetch the document
     html_content = await self.async_fetch_content(url)
@@ -287,19 +222,19 @@ Follow these instructions:
   async def async_scrape_multiple(
     self,
     urls: List[str],
-    scraping_config: ScrapingConfig[T]
-    ) -> List[WebScraperResult[T]]:
+    scraping_config: ScrapingConfig
+    ) -> List[WebScraperResult]:
     """Scrape multiple URLs concurrently"""
 
     tasks = [self.async_scrape(url, scraping_config) for url in urls]
     results = await asyncio.gather(*tasks)
     return results
 
-  def scrape(self, url: str, scraping_config: ScrapingConfig[T]) -> WebScraperResult[T]:
+  def scrape(self, url: str, scraping_config: ScrapingConfig) -> WebScraperResult:
     """Main method to orchestrate the scraping process"""
     return asyncio.run(self.async_scrape(url, scraping_config))
 
-  def scrape_multiple(self, urls: List[str], scraping_config: ScrapingConfig[T]) -> List[WebScraperResult[T]]:
+  def scrape_multiple(self, urls: List[str], scraping_config: ScrapingConfig) -> List[WebScraperResult]:
     """Synchronous wrapper for scraping multiple URLs"""
     return asyncio.run(self.async_scrape_multiple(urls, scraping_config))
 
