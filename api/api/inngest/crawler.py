@@ -191,7 +191,7 @@ def _get_crawl_configs(artifact_domain: ArtifactDomain) -> tuple[ScrapingConfig,
   scraping_config = scraping_config.model_copy(
     update=artifact_domain.get("crawl_config"),
   )
-  max_crawl_depth = artifact_domain["crawl_config"].get("crawl_depth", MAX_CRAWL_DEPTH)
+  max_crawl_depth = artifact_domain["crawl_config"].get("max_crawl_depth", MAX_CRAWL_DEPTH)
   return scraping_config, max_crawl_depth
 
 async def _extract_data(scrape_response: WebScraperResult) -> MetadataExtractionResponse:
@@ -497,7 +497,7 @@ async def _perform_scraping(
   scraping_config: ScrapingConfig
 ) -> WebScraperResult:
   scraper = WebScraper(
-    scraper="playwright",
+    scraper="scraping_fish",
     scraping_service_api_key=os.getenv("SCRAPING_FISH_API_KEY")
   )
   return await scraper.async_scrape(url, scraping_config)

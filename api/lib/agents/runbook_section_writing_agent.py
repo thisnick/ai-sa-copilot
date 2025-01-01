@@ -150,8 +150,10 @@ Remember:
     try:
       if isinstance(queries, str):
         queries = json.loads(queries)
+      domain_id = context_variables.get("domain_id")
+      assert domain_id is not None, "Domain ID is required"
 
-      return await async_query_for_artifacts(queries)
+      return await async_query_for_artifacts(queries, domain_id)
     except Exception as e:
       logging.error(f"Error in query_for_artifacts: {str(e)}")
       return AsyncResult(value=f"Error querying for artifacts: {e}")
