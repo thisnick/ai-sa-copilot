@@ -16,7 +16,7 @@ alter table "public"."artifacts" validate constraint "artifacts_crawled_as_artif
 
 set check_function_bodies = off;
 
-CREATE OR REPLACE FUNCTION public.match_artifacts(query_embedding vector, match_count integer, domain_id text, filter jsonb)
+CREATE OR REPLACE FUNCTION public.match_artifacts(query_embedding vector, match_count integer, domain_id uuid, filter jsonb)
  RETURNS TABLE(artifact_id uuid, artifact_content_id uuid, metadata jsonb, title text, summary text, summary_embedding vector, anchor_id text, url text, similarity double precision)
  LANGUAGE plpgsql
 AS $function$
@@ -24,7 +24,7 @@ BEGIN
     RETURN QUERY
     WITH results AS (
         SELECT
-            artifacts.artifact_id,  -- Correctly selecting artifact_id from artifacts
+            artifacts.artifact_id,
             artifact_contents.artifact_content_id,
             artifact_contents.metadata,
             artifact_contents.title,
@@ -38,7 +38,7 @@ BEGIN
         INNER JOIN artifacts ON artifact_contents.artifact_id = artifacts.artifact_id
         WHERE
             artifact_contents.metadata @> filter AND
-            artifacts.domain_id = domain_id
+            artifacts.domain_id = $3  -- Using positional parameter instead of parameter name
     )
     SELECT *
     FROM results
