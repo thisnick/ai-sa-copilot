@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 
 scraper = WebScraper(
-  verbose=True,
   model="openai/gpt-4o-mini",
   model_api_key=os.getenv("OPENAI_API_KEY"),
   scraping_service_api_key=os.getenv("SCRAPING_FISH_API_KEY"),
@@ -26,8 +25,6 @@ prompt=f"Extract the title, summary, main content links, and nav_bar_links. This
 scraping_result = scraper.scrape(
     url="https://supabase.com/docs/reference/javascript/auth-signinwithpassword",
     scraping_config=ScrapingConfig(
-        prompt=prompt,
-        schema=ArtifactMetadata,
         splitting_selector=[
           'html',
           'article',

@@ -2,15 +2,17 @@
 Simple web scraper with LLM integration
 """
 import asyncio
-from typing import AsyncGenerator, Optional, Dict, Any, List, Type
+from typing import AsyncGenerator, Optional, List
+
+from aiohttp import ClientTimeout
 from .types import ScrapedLink, ScrapedContent, WebScraperResult, ScraperType, ScrapingConfig
+from lib.logger import get_logger_from_context
 
 class WebScraper():
 
   def __init__(
     self,
     headless: bool = True,
-    verbose: bool = False,
     model: str = "gpt-4o-mini",
     scraper: ScraperType = "playwright",
     model_api_base: Optional[str] = 'https://api.openai.com/v1',
@@ -19,7 +21,6 @@ class WebScraper():
   ):
     """Initialize the web scraper with configuration options"""
     self.headless = headless
-    self.verbose = verbose
     self.model = model
     self.model_api_base = model_api_base
     self.model_api_key = model_api_key
@@ -29,6 +30,8 @@ class WebScraper():
     self.browser_config = {}
     self.RETRY_LIMIT = 3
     self.TIMEOUT = 10
+
+    self.logger = get_logger_from_context()
 
   async def async_fetch_content(self, url: str) -> str:
     if self.scraper == "playwright":
@@ -46,8 +49,7 @@ class WebScraper():
     if not self.scraping_service_api_key:
       raise ValueError("ScrapingFish requires an API key. Please provide it via scraping_service_api_key parameter.")
 
-    if self.verbose:
-      print("Scraping with ScrapingFish: ", url)
+    self.logger.info(f"Scraping with ScrapingFish: {url}")
 
     params = {
       "api_key": self.scraping_service_api_key,
@@ -62,7 +64,7 @@ class WebScraper():
           async with session.get(
             "https://scraping.narf.ai/api/v1/",
             params=params,
-            timeout=self.TIMEOUT
+            timeout=ClientTimeout(total=self.TIMEOUT)
           ) as response:
             if response.status != 200:
               raise Exception(f"ScrapingFish API error: {response.status}")
@@ -71,22 +73,19 @@ class WebScraper():
             return text
       except Exception as e:
         attempt += 1
-        if self.verbose:
-          print(f"Attempt {attempt} failed: {e}")
+        self.logger.warning(f"Attempt {attempt} failed: {e}")
         if attempt == self.RETRY_LIMIT:
-          return WebScraper.FetchContentResult(
-            content=f"Error: Network error after {self.RETRY_LIMIT} attempts - {e}",
-            title="Error"
-          )
+          self.logger.error("Max retries reached. Returning None")
+          raise Exception(f"Unable to scrape {url}, error: {e}")
+
+    assert False, "Reached the end of the async_fetch_content_scraping_fish method without returning a value"
 
   async def async_fetch_content_playwright(self, url: str) -> str:
     """Fetch content from URL using Playwright"""
     from playwright.async_api import async_playwright
     from undetected_playwright import Malenia
 
-
-    if self.verbose:
-      print("Scraping with Playwright: ", url)
+    self.logger.info(f"Scraping with Playwright: {url}")
 
     attempt = 0
 
@@ -106,19 +105,20 @@ class WebScraper():
 
           content = await page.content()
 
-          if self.verbose:
-            print("Content successfully scraped")
+          self.logger.info("Content successfully scraped")
 
           return content
       except Exception as e:
         attempt += 1
-        if self.verbose:
-          print(f"Attempt {attempt} failed: {e}")
+        self.logger.warning(f"Attempt {attempt} failed: {e}")
         if attempt == self.RETRY_LIMIT:
-          return f"Error: Network error after {self.RETRY_LIMIT} attempts - {e}"
+          self.logger.error("Max retries reached. Returning None")
+          raise Exception(f"Unable to scrape {url}, error: {e}")
 
       finally:
         await browser.close()
+
+    assert False, "Reached the end of the async_fetch_content_playwright method without returning a value"
 
   async def extract_page_sections(
     self,
@@ -152,11 +152,11 @@ class WebScraper():
           continue
 
       id_counter += 1
-      id : Optional[str] = section.get('id') or str(id_counter)
+      id : Optional[str] = str(section.get('id') or id_counter)
       if scraping_config.section_id_selector:
         id_element = section.select_one(scraping_config.section_id_selector)
         if id_element:
-          id = id_element.get(scraping_config.section_id_selector)
+          id = str(id_element.get(scraping_config.section_id_selector))
       section_title_soup = section.select_one(scraping_config.title_selector)
       section_title = section_title_soup.text if section_title_soup else ""
       parsed_content = self.parse_content(section_content, base_url)
@@ -178,12 +178,11 @@ class WebScraper():
         # extracted_data=extracted_data
       )
 
-  def parse_content(self, html_content: str, base_url: str) -> Dict[str, Any]:
+  def parse_content(self, html_content: str, base_url: str) -> str:
     """Parse HTML content and extract relevant information"""
     import html2text
 
-    if self.verbose:
-      print("Parsing content...")
+    self.logger.info("Parsing content...")
 
     # Initialize html2text
     h = html2text.HTML2Text(baseurl=base_url)

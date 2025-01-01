@@ -17,7 +17,7 @@ class ScrapedContent(BaseModel):
 
 class WebScraperResult(BaseModel):
   url: str
-  page_title: str
+  page_title: str | None = None
   page_content: str
   scraped_sections: List[ScrapedContent]
 

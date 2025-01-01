@@ -19,7 +19,7 @@ class Logger(Protocol):
   def critical(self, msg, *args, **kwargs):
     pass
 
-logger_context = ContextVar[Logger | None]('logger', default=PrintLogger)
+logger_context = ContextVar[Logger | None]('logger', default=PrintLogger(name="default"))
 
 def get_logger_from_context() -> Logger:
   logger = logger_context.get()

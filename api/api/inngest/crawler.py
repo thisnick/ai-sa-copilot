@@ -8,8 +8,10 @@ from lib.inngest_context import get_inngest_step_from_context
 from lib.db.types import (
   Artifact,
   ArtifactContent,
+  ArtifactContentInsert,
   ArtifactDomain,
   ArtifactLink,
+  ArtifactLinkInsert,
   CrawlConfig,
 )
 from lib.metadata import ArtifactMetadata
@@ -30,7 +32,7 @@ from .tools import get_sha256_hash
 MetadataExtractionResponse : TypeAlias = PageDataExtractionResult[ArtifactMetadata, ArtifactMetadata]
 class ScheduleCrawlFunction(Protocol):
   async def __call__(self, step_id: str, crawl_request: CrawlRequestedEventData | List[CrawlRequestedEventData]) -> List[str]:
-    pass
+    return []
 
 MAX_CRAWL_DEPTH = 5
 
@@ -79,6 +81,8 @@ async def run_crawl_url(
   upserted_artifact = await _create_new_artifact(crawl_request)
   try:
     scrape_response = await _perform_scraping(crawl_request.url, scraping_config)
+    if not scrape_response.page_content:
+      raise inngest.NonRetriableError("No page content found")
 
     # Check for duplicate content
     duplicate_artifact = await _check_duplicate_content(
@@ -87,6 +91,11 @@ async def run_crawl_url(
     )
 
     if duplicate_artifact:
+      await _save_artifact_data_with_duplicate(
+        upserted_artifact,
+        scrape_response,
+        duplicate_artifact,
+      )
       return await _process_existing_artifact(
         duplicate_artifact,
         crawl_request,
@@ -126,7 +135,7 @@ async def run_crawl_url(
     await _mark_artifact_as_crawl_failed(upserted_artifact)
     raise e
 
-async def _schedule_crawl(step_id: str, crawl_request: CrawlRequestedEventData | List[CrawlRequestedEventData]):
+async def _schedule_crawl(step_id: str, crawl_request: CrawlRequestedEventData | List[CrawlRequestedEventData]) -> List[str]:
   step = get_inngest_step_from_context()
   logger = get_logger_from_context()
   if isinstance(crawl_request, CrawlRequestedEventData):
@@ -138,7 +147,7 @@ async def _schedule_crawl(step_id: str, crawl_request: CrawlRequestedEventData |
       CrawlRequestedEvent(data=request).to_event()
       for request in crawl_request
     ]
-  return step.send_event(step_id, events)
+  return await step.send_event(step_id, events)
 
 async def _embed_strings(texts: List[str]) -> List[List[float]]:
   from lib.nomic import NomicEmbeddings
@@ -168,12 +177,12 @@ async def _get_domain(crawl_request: CrawlRequestedEventData) -> ArtifactDomain:
 
   if not crawl_domain_response:
     logger.info(f"Domain {crawl_request.domain_id} not found")
-    raise inngest.NoDataError(f"Domain {crawl_request.domain_id} not found")
+    raise Exception(f"Domain {crawl_request.domain_id} not found")
 
   artifact_domain = cast(ArtifactDomain, crawl_domain_response.data)
   if not artifact_domain.get("crawl_config"):
     logger.info(f"Domain {crawl_request.domain_id} does not have a crawl config")
-    raise inngest.NoDataError(f"Domain {crawl_request.domain_id} does not have a crawl config")
+    raise Exception(f"Domain {crawl_request.domain_id} does not have a crawl config")
 
   return artifact_domain
 
@@ -207,6 +216,7 @@ async def _save_artifact_data(
   extraction_response: MetadataExtractionResponse
 ) -> Artifact:
   admin_supabase = await create_async_supabase_admin_client()
+  content_hash = get_sha256_hash(scrape_response.page_content)
   updated_article_response = await admin_supabase\
     .table("artifacts")\
     .update({
@@ -215,6 +225,30 @@ async def _save_artifact_data(
       "parsed_text": scrape_response.page_content,
       "summary": extraction_response.whole_page_summary,
       "title": scrape_response.page_title,
+      "content_sha256": content_hash,
+    })\
+    .eq("artifact_id", artifact["artifact_id"])\
+    .execute()
+
+  return Artifact(updated_article_response.data[0])
+
+async def _save_artifact_data_with_duplicate(
+  artifact: Artifact,
+  scrape_response: WebScraperResult,
+  duplicate_artifact: Artifact,
+) -> Artifact:
+  admin_supabase = await create_async_supabase_admin_client()
+  content_hash = get_sha256_hash(scrape_response.page_content)
+  updated_article_response = await admin_supabase\
+    .table("artifacts")\
+    .update({
+      "crawl_status": "scraped",
+      "metadata": duplicate_artifact["metadata"],
+      "parsed_text": scrape_response.page_content,
+      "summary": duplicate_artifact["summary"],
+      "title": duplicate_artifact["title"],
+      "content_sha256": content_hash,
+      "crawled_as_artifact_id": duplicate_artifact["artifact_id"],
     })\
     .eq("artifact_id", artifact["artifact_id"])\
     .execute()
@@ -236,7 +270,9 @@ async def _process_existing_artifact(
     logger.info(f"Artifact {existing_artifact['url']} has already been processed at depth {existing_artifact['crawl_depth']}")
     return {"data": existing_artifact}
 
-  assert existing_artifact["crawl_status"] in ["scraped"], "Artifact must be scraped before processing"
+  if not existing_artifact["crawl_status"] in ["scraped"]:
+    logger.info(f"Artifact {existing_artifact['url']} has not been scraped, skipping")
+    raise Exception(f"Artifact {existing_artifact['url']} has not been scraped, skipping")
 
   logger.info(f"Processing outbound links for {existing_artifact['url']} at depth {existing_artifact['crawl_depth']}")
 
@@ -266,7 +302,7 @@ async def _process_existing_artifact(
     CrawlRequestedEventData(
       url=link["target_url"],
       crawl_depth=base_crawl_event.crawl_depth + 1,
-      allowed_url_patterns=base_crawl_event.allowed_url_patterns
+      domain_id=base_crawl_event.domain_id
     ) for link in outbound_links.data
   ]
   event_ids = await _schedule_crawl(
@@ -291,7 +327,7 @@ async def _crawl_links(
   if len(insert_links_payload) == 0:
     return {"crawl_event_ids": [], "insert_ids": []}
 
-  insert_response = await _insert_new_links(insert_links_payload)
+  inserted_links = await _insert_new_links(insert_links_payload)
 
   # Handle crawling of new links
   links_to_crawl = await _filter_existing_links(
@@ -300,13 +336,13 @@ async def _crawl_links(
   )
 
   event_ids = await _schedule_link_crawls(
-    links_to_crawl,
+    inserted_links,
     base_crawl_event,
   )
 
   return {
     "crawl_event_ids": event_ids,
-    "insert_ids": insert_response.data
+    "insert_ids": inserted_links
   }
 
 def _match_artifact_sections(
@@ -345,32 +381,34 @@ async def _delete_existing_links(
 def _create_insert_links_payload(
   matched_sections: List[tuple[ArtifactContent, ScrapedContent]],
   crawl_config: CrawlConfig
-) -> List[ArtifactLink]:
+) -> List[ArtifactLinkInsert]:
   """Create payload for new links to be inserted."""
   return [
-    ArtifactLink(
-      anchor_text=link.anchor_text,
-      source_artifact_content_id=artifact_content["artifact_content_id"],
-      target_url=link.url
-    )
+    ArtifactLinkInsert({
+      "anchor_text": link.anchor_text,
+      "source_artifact_content_id": artifact_content["artifact_content_id"],
+      "target_url": link.url
+    })
     for (artifact_content, scraped_section) in matched_sections
     for link in scraped_section.scraped_links[:50]
     if any(re.match(pattern, link.url) for pattern in crawl_config["allowed_url_patterns"])
   ]
 
 async def _insert_new_links(
-  links_payload: List[ArtifactLink]
-) -> Any:
+  links_payload: List[ArtifactLinkInsert]
+) -> List[ArtifactLink]:
   """Insert new links into the database."""
   admin_supabase = await create_async_supabase_admin_client()
-  return await admin_supabase.table("artifact_links")\
+  response = await admin_supabase.table("artifact_links")\
     .insert(links_payload)\
     .execute()
 
+  return [ArtifactLink(link) for link in response.data]
+
 async def _filter_existing_links(
-  links: List[ArtifactLink],
+  links: List[ArtifactLinkInsert],
   base_crawl_event: CrawlRequestedEventData
-) -> List[ArtifactLink]:
+) -> List[ArtifactLinkInsert]:
   """Filter out links that already exist with lower/equal crawl depth."""
   admin_supabase = await create_async_supabase_admin_client()
   existing_response = await admin_supabase.table("artifacts")\
@@ -458,7 +496,10 @@ async def _perform_scraping(
   url: str,
   scraping_config: ScrapingConfig
 ) -> WebScraperResult:
-  scraper = WebScraper(scraper="playwright")
+  scraper = WebScraper(
+    scraper="playwright",
+    scraping_service_api_key=os.getenv("SCRAPING_FISH_API_KEY")
+  )
   return await scraper.async_scrape(url, scraping_config)
 
 async def _check_duplicate_content(
@@ -486,19 +527,19 @@ async def _check_duplicate_content(
       admin_supabase
       .table("artifacts")
       .update({
-        "crawled_as_artifact_id": existing_hash_doc_response.data[0]["artifact_id"],
+        "crawled_as_artifact_id": existing_hash_doc_response.data["artifact_id"],
         "crawl_status": "scraped",
-        "metadata": existing_hash_doc_response.data[0]["metadata"],
-        "parsed_text": existing_hash_doc_response.data[0]["parsed_text"],
-        "summary": existing_hash_doc_response.data[0]["summary"],
-        "title": existing_hash_doc_response.data[0]["title"],
+        "metadata": existing_hash_doc_response.data["metadata"],
+        "parsed_text": existing_hash_doc_response.data["parsed_text"],
+        "summary": existing_hash_doc_response.data["summary"],
+        "title": existing_hash_doc_response.data["title"],
         "url": artifact["url"],
         "content_sha256": content_hash,
       })
       .eq("artifact_id", artifact["artifact_id"])
       .execute()
     )
-    return Artifact(existing_hash_doc_response.data[0])
+    return Artifact(existing_hash_doc_response.data)
 
   return None
 
@@ -510,23 +551,21 @@ async def _process_artifact_sections(
   admin_supabase = await create_async_supabase_admin_client()
   logger = get_logger_from_context()
 
-  page_hash = get_sha256_hash(scrape_response.page_content)
   summary_embeddings = await _embed_strings([
     f"{section.title}\n\n{extraction_response.sections_data[i].section_summary}"
     for i, section in enumerate(scrape_response.scraped_sections)
   ])
 
-  upsert_artifact_content_payload: List[ArtifactContent] = [
-    ArtifactContent(
-      artifact_id=artifact["artifact_id"],
-      title=scraped_section.title,
-      parsed_text=scraped_section.content,
-      anchor_id=scraped_section.id,
-      summary=extraction_response.sections_data[index].section_summary,
-      metadata=extraction_response.sections_data[index].section_data.model_dump(mode='json'),
-      summary_embedding=str(summary_embeddings[index]),
-      content_sha256=page_hash,
-    ) for (index, scraped_section) in enumerate(scrape_response.scraped_sections)
+  upsert_artifact_content_payload: List[ArtifactContentInsert] = [
+    ArtifactContentInsert({
+      "artifact_id": artifact["artifact_id"],
+      "title": scraped_section.title,
+      "parsed_text": scraped_section.content,
+      "anchor_id": scraped_section.id,
+      "summary": extraction_response.sections_data[index].section_summary,
+      "metadata": extraction_response.sections_data[index].section_data.model_dump(mode='json'),
+      "summary_embedding": str(summary_embeddings[index]),
+    }) for (index, scraped_section) in enumerate(scrape_response.scraped_sections)
   ]
 
   upsert_response = await (

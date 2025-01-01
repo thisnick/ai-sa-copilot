@@ -23,10 +23,9 @@ class Artifact(TypedDict):
   content_sha256: Optional[str]
   crawled_as_artifact_id: Optional[str]
 
-class ArtifactContent(TypedDict):
-  artifact_content_id: str
+
+class ArtifactContentInsert(TypedDict):
   artifact_id: str
-  created_at: str
   metadata: dict
   parsed_text: str
   summary: str
@@ -34,12 +33,18 @@ class ArtifactContent(TypedDict):
   title: str
   anchor_id: Optional[str]
 
-class ArtifactLink(TypedDict):
-  anchor_text: str
+class ArtifactContent(ArtifactContentInsert):
+  artifact_content_id: str
   created_at: str
-  id: str
+
+class ArtifactLinkInsert(TypedDict):
+  anchor_text: Optional[str]
   source_artifact_content_id: str
   target_url: str
+
+class ArtifactLink(ArtifactLinkInsert):
+  created_at: str
+  id: str
 
 class CrawlConfig(TypedDict):
   crawl_depth: int
