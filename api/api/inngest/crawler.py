@@ -509,6 +509,8 @@ async def _process_artifact_sections(
 ) -> List[ArtifactContent]:
   admin_supabase = await create_async_supabase_admin_client()
   logger = get_logger_from_context()
+
+  page_hash = get_sha256_hash(scrape_response.page_content)
   summary_embeddings = await _embed_strings([
     f"{section.title}\n\n{extraction_response.sections_data[i].section_summary}"
     for i, section in enumerate(scrape_response.scraped_sections)
@@ -523,6 +525,7 @@ async def _process_artifact_sections(
       summary=extraction_response.sections_data[index].section_summary,
       metadata=extraction_response.sections_data[index].section_data.model_dump(mode='json'),
       summary_embedding=str(summary_embeddings[index]),
+      content_sha256=page_hash,
     ) for (index, scraped_section) in enumerate(scrape_response.scraped_sections)
   ]
 
