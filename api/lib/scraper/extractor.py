@@ -84,10 +84,8 @@ class DataExtractor():
     context: Optional[str] = None,
   ) -> Tuple[str, TData]:
     from litellm import acompletion
-
-
     # Truncate content to 50k characters
-    truncated_content = parsed_content[:50000]
+    truncated_content = f"{parsed_content[:50000]}..." if len(parsed_content) > 50000 else parsed_content
 
     if not context:
       summary_prompt = f"""
@@ -95,8 +93,8 @@ class DataExtractor():
       2. When formulating your questions:
         a. Address the central idea, theme or argument
         b. Identify key supporting ideas
-        c. Highlight important facts or evidence
-        d. Reveal the author's purpose or perspective
+        c. Highlight unique and important facts or evidence
+        d. Reveal the document's purpose and goals
         e. Explore any significant implications or conclusions.
       3. Answer all of your generated questions one-by-one succinctly in 2-3 sentences as main points of the document.
       4. Do not include the questions. Output the main points only.
@@ -106,7 +104,12 @@ class DataExtractor():
       * <Main point 2> (reframed from answer to question 2)
       ...
       """
-      content_message = f"<Document><Title>{title}</Title>\n\n<Content>{truncated_content}</Content></Document>"
+      content_message = f"""
+<Document>
+  <Title>{title}</Title>
+  <Content>{truncated_content}</Content>
+</Document>
+"""
     else:
       summary_prompt = f"""
       1. You are analyzing the document chunk within a given document context. Generate 5 essential questions that, when answered, capture the main points and core meaning of the text
@@ -114,10 +117,10 @@ class DataExtractor():
       2. When formulating your questions:
         a. Address the central idea, theme or argument
         b. Identify key supporting ideas
-        c. Highlight important facts or evidence
-        d. Reveal the author's purpose or perspective
+        c. Highlight unique and important facts or evidence
+        d. Reveal the document's purpose and goals
         e. Explore any significant implications or conclusions.
-        f. Include the questions that make sense of the content within the context.
+        f. Makes sense of the content by using the context.
       3. Answer all of your generated questions one-by-one succinctly in 2-3 sentences as main points of the document.
       4. Do not include the questions. Output the main points only.
 
@@ -126,7 +129,14 @@ class DataExtractor():
       * <Main point 2> (reframed from answer to question 2)
       ...
       """
-      content_message = f"<DocumentContext>{context}</DocumentContext>\n\n<DocumentChunkToAnalyze><Heading>{title}</Heading>\n\n<Content>{truncated_content}</Content></DocumentChunkToAnalyze>"
+      content_message = f"""
+<ParentDocumentContext>
+  {context}
+</ParentDocumentContext>
+<DocumentChunkToAnalyze>
+  <Heading>{title}</Heading>
+  <Content>{truncated_content}</Content>
+</DocumentChunkToAnalyze>"""
 
     summary_messages = [
       {"role": "system", "content": summary_prompt},

@@ -31,3 +31,10 @@ class CrawlRequestedEventData(BaseModel):
 class CrawlRequestedEvent(BaseEvent):
   data: CrawlRequestedEventData
   name: ClassVar[str] = "app/url.added"
+
+class ResumeCrawlEventData(BaseEvent):
+  pass
+
+class ResumeCrawlEvent(BaseEvent):
+  data: ResumeCrawlEventData
+  name: ClassVar[str] = "app/crawl.resume"

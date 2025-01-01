@@ -32,8 +32,6 @@ class ScrapingConfig(BaseModel):
   max_chunk_size: int = 50000
   title_selector: str = 'title, h1, h2, h3'
   section_id_selector: Optional[str] = None
-  schema: Type[T]
-  prompt: str
 
 class DataExtractorConfig(BaseModel, Generic[TPage, TSection]):
   section_extraction_schema: Type[TSection]

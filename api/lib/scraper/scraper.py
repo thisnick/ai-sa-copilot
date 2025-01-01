@@ -47,7 +47,7 @@ class WebScraper():
       raise ValueError("ScrapingFish requires an API key. Please provide it via scraping_service_api_key parameter.")
 
     if self.verbose:
-      print(f"Fetching content from: {url}")
+      print("Scraping with ScrapingFish: ", url)
 
     params = {
       "api_key": self.scraping_service_api_key,
@@ -84,8 +84,9 @@ class WebScraper():
     from playwright.async_api import async_playwright
     from undetected_playwright import Malenia
 
+
     if self.verbose:
-      print(f"Fetching content from: {url}")
+      print("Scraping with Playwright: ", url)
 
     attempt = 0
 
@@ -240,7 +241,7 @@ class WebScraper():
 
   def _normalize_url(self, href: str, base_url: str) -> str:
     """Normalize relative URLs to absolute URLs and filter out self-links"""
-    from urllib.parse import urljoin, urlparse
+    from urllib.parse import urljoin, urlparse, urlunparse
 
     if not href:
       return ""
@@ -267,5 +268,7 @@ class WebScraper():
         parsed_full.path == parsed_base.path):
       return ""
 
-    return full_url
+    # Remove the fragment and reconstruct the URL
+    cleaned_parts = parsed_full._replace(fragment='')
+    return urlunparse(cleaned_parts)
 

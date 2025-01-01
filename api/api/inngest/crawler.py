@@ -1,12 +1,9 @@
-from copy import deepcopy
 import os
 import re
-from typing import Callable, Coroutine, List, Protocol, TypeAlias, cast, Optional, Any
-from urllib.parse import urljoin, urlparse
+from typing import List, Protocol, TypeAlias, cast, Optional, Any
 
 import inngest
-from markdown_it import MarkdownIt
-from supabase import AsyncClient
+from lib.inngest_context import get_inngest_step_from_context
 
 from lib.db.types import (
   Artifact,
@@ -15,8 +12,7 @@ from lib.db.types import (
   ArtifactLink,
   CrawlConfig,
 )
-from lib.inngest import inngest_client
-from lib.metadata import ArtifactMetadata, Link
+from lib.metadata import ArtifactMetadata
 from lib.scraper import (
   WebScraper,
   DataExtractor,
@@ -26,6 +22,7 @@ from lib.scraper import (
 )
 from lib.scraper.types import PageDataExtractionResult, ScrapedContent
 from lib.supabase import create_async_supabase_admin_client
+from lib.logger import get_logger_from_context
 
 from .events import CrawlRequestedEvent, CrawlRequestedEventData
 from .tools import get_sha256_hash
@@ -37,33 +34,111 @@ class ScheduleCrawlFunction(Protocol):
 
 MAX_CRAWL_DEPTH = 5
 
-@inngest_client.create_function(
-  fn_id="crawl",
-  trigger=inngest.TriggerEvent(event=CrawlRequestedEvent.name),
-  concurrency=[
-    inngest.Concurrency(limit=20),
-    inngest.Concurrency(scope="account", limit=1, key="event.data.url")
-  ],
-)
-async def crawl_url(ctx: inngest.Context, step: inngest.Step):
-  event = CrawlRequestedEvent.from_event(ctx.event)
+async def run_crawl_url(
+  crawl_request: CrawlRequestedEventData
+):
+  assert crawl_request.crawl_depth is not None, "Crawl depth is required"
+  assert crawl_request.url is not None, "URL is required"
+  assert crawl_request.domain_id is not None, "Domain ID is required"
+  logger = get_logger_from_context()
 
-  def schedule_crawl(step_id: str, crawl_request: CrawlRequestedEventData | List[CrawlRequestedEventData]):
-    # For single request
-    if isinstance(crawl_request, CrawlRequestedEventData):
-        events = [CrawlRequestedEvent(data=crawl_request).to_event()]
-    # For list of requests
-    else:
-        events = [
-            CrawlRequestedEvent(data=request).to_event()
-            for request in crawl_request
-        ]
-    return step.send_event(step_id, events)
+  # Validate and get domain config
+  artifact_domain = await _get_domain(crawl_request)
+  crawl_config = artifact_domain["crawl_config"]
 
-  return await _crawl_url(
-    event.data,
-    schedule_crawl
-  )
+  if not crawl_config:
+    logger.warning(f"Domain {crawl_request.domain_id} does not have a crawl config")
+    return {"message": "Domain does not have a crawl config, skipping"}
+
+  if not crawl_config.get("allowed_url_patterns"):
+    logger.info(f"Domain {crawl_request.domain_id} does not have any allowed URL patterns")
+    return {"message": "Domain does not have any allowed URL patterns, skipping"}
+
+  # Check if URL matches allowed URL patterns
+  if not any(re.match(pattern, crawl_request.url) for pattern in crawl_config.get("allowed_url_patterns", [])):
+    logger.info(f"URL {crawl_request.url} does not match any allowed URL patterns")
+    return {"message": "URL does not match any allowed URL patterns, skipping"}
+
+  # Check crawl depth limits
+  scraping_config, max_crawl_depth = _get_crawl_configs(artifact_domain)
+
+  if crawl_request.crawl_depth > max_crawl_depth:
+    logger.info(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {max_crawl_depth}, skipping")
+    return {"message": "Crawl depth is greater than max crawl depth, skipping"}
+
+  # Check for existing artifact
+  existing_artifact = await _get_existing_artifact(crawl_request.url)
+  if existing_artifact:
+    return await _process_existing_artifact(
+      existing_artifact,
+      crawl_request,
+      crawl_config,
+    )
+
+  # Create new artifact and scrape
+  upserted_artifact = await _create_new_artifact(crawl_request)
+  try:
+    scrape_response = await _perform_scraping(crawl_request.url, scraping_config)
+
+    # Check for duplicate content
+    duplicate_artifact = await _check_duplicate_content(
+      upserted_artifact,
+      scrape_response.page_content
+    )
+
+    if duplicate_artifact:
+      return await _process_existing_artifact(
+        duplicate_artifact,
+        crawl_request,
+        crawl_config,
+      )
+    extraction_response = await _extract_data(scrape_response)
+
+
+    # Process sections and embeddings
+    updated_artifact_contents = await _process_artifact_sections(
+      upserted_artifact,
+      scrape_response,
+      extraction_response
+    )
+
+    # Process links
+    crawl_links_response = await _crawl_links(
+      updated_artifact_contents,
+      scrape_response,
+      crawl_request,
+      artifact_domain["crawl_config"],
+    )
+
+    # Save data related to the artifact
+    updated_article = await _save_artifact_data(
+      upserted_artifact,
+      scrape_response,
+      extraction_response
+    )
+
+    return {
+      "artifact": updated_article,
+      **crawl_links_response
+    }
+  except Exception as e:
+    logger.error(f"Error processing crawl request {crawl_request.url}: {e}")
+    await _mark_artifact_as_crawl_failed(upserted_artifact)
+    raise e
+
+async def _schedule_crawl(step_id: str, crawl_request: CrawlRequestedEventData | List[CrawlRequestedEventData]):
+  step = get_inngest_step_from_context()
+  logger = get_logger_from_context()
+  if isinstance(crawl_request, CrawlRequestedEventData):
+    events = [CrawlRequestedEvent(data=crawl_request).to_event()]
+  # For list of requests
+  else:
+    logger.info(f"Scheduling {len(crawl_request)} crawl requests")
+    events = [
+      CrawlRequestedEvent(data=request).to_event()
+      for request in crawl_request
+    ]
+  return step.send_event(step_id, events)
 
 async def _embed_strings(texts: List[str]) -> List[List[float]]:
   from lib.nomic import NomicEmbeddings
@@ -79,96 +154,25 @@ async def _embed_strings(texts: List[str]) -> List[List[float]]:
 
   return embeddings.embeddings
 
-async def _crawl_url(
-  crawl_request: CrawlRequestedEventData,
-  schedule_crawl: ScheduleCrawlFunction = None
-):
-  # Validate and get domain config
-  artifact_domain = await _validate_and_get_domain(crawl_request)
-
-  # Check crawl depth limits
-  scraping_config, max_crawl_depth = _get_crawl_configs(artifact_domain)
-  if crawl_request.crawl_depth > max_crawl_depth:
-    print(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {max_crawl_depth}, skipping")
-    return
-
-  # Check for existing artifact
-  existing_artifact = await _get_existing_artifact(crawl_request.url)
-  if existing_artifact:
-    return await _process_existing_artifact(
-      existing_artifact,
-      crawl_request,
-      schedule_crawl
-    )
-
-  # Create new artifact and scrape
-  upserted_artifact = await _create_new_artifact(crawl_request)
-  scrape_response = await _perform_scraping(crawl_request.url, scraping_config)
-
-  # Check for duplicate content
-  duplicate_artifact = await _check_duplicate_content(
-    upserted_artifact,
-    scrape_response.page_content
-  )
-
-  if duplicate_artifact:
-    return await _process_existing_artifact(
-      duplicate_artifact,
-      crawl_request,
-      schedule_crawl
-    )
-  extraction_response = await _extract_data(scrape_response)
-
-  # Save data related to the artifact
-  updated_article = await _save_artifact_data(
-    upserted_artifact,
-    scrape_response,
-    extraction_response
-  )
-
-  # Process sections and embeddings
-  updated_artifact_contents = await _process_artifact_sections(
-    upserted_artifact,
-    scrape_response,
-    extraction_response
-  )
-
-  # Process links
-  crawl_links_response = await _crawl_links(
-    updated_artifact_contents,
-    scrape_response,
-    crawl_request,
-    artifact_domain["crawl_config"],
-    schedule_crawl
-  )
-
-  return {
-    "artifact": updated_article,
-    **crawl_links_response
-  }
-
-async def _validate_and_get_domain(crawl_request: CrawlRequestedEventData) -> ArtifactDomain:
-  assert crawl_request.crawl_depth is not None, "Crawl depth is required"
-  assert crawl_request.url is not None, "URL is required"
-  assert crawl_request.domain_id is not None, "Domain ID is required"
-
+async def _get_domain(crawl_request: CrawlRequestedEventData) -> ArtifactDomain:
   admin_supabase = await create_async_supabase_admin_client()
+  logger = get_logger_from_context()
   crawl_domain_response = await (
     admin_supabase
     .table("artifact_domains")
     .select("*")
-    .eq("domain_id", crawl_request.domain_id)
+    .eq("id", crawl_request.domain_id)
     .maybe_single()
     .execute()
   )
 
   if not crawl_domain_response:
-    print(f"Domain {crawl_request.domain_id} not found")
+    logger.info(f"Domain {crawl_request.domain_id} not found")
     raise inngest.NoDataError(f"Domain {crawl_request.domain_id} not found")
 
   artifact_domain = cast(ArtifactDomain, crawl_domain_response.data)
   if not artifact_domain.get("crawl_config"):
-    print(f"Domain {crawl_request.domain_id} does not have a crawl config")
+    logger.info(f"Domain {crawl_request.domain_id} does not have a crawl config")
     raise inngest.NoDataError(f"Domain {crawl_request.domain_id} does not have a crawl config")
 
   return artifact_domain
@@ -177,7 +181,6 @@ def _get_crawl_configs(artifact_domain: ArtifactDomain) -> tuple[ScrapingConfig,
   scraping_config = ScrapingConfig()
   scraping_config = scraping_config.model_copy(
     update=artifact_domain.get("crawl_config"),
-    ignore_extra=True
   )
   max_crawl_depth = artifact_domain["crawl_config"].get("crawl_depth", MAX_CRAWL_DEPTH)
   return scraping_config, max_crawl_depth
@@ -221,29 +224,41 @@ async def _save_artifact_data(
 async def _process_existing_artifact(
   existing_artifact: Artifact,
   base_crawl_event: CrawlRequestedEventData,
-  schedule_crawl: ScheduleCrawlFunction = None
+  crawl_config: CrawlConfig,
 ) -> dict:
-  admin_supabase = await create_async_supabase_admin_client()
-  assert existing_artifact["crawl_status"] == "scraped", "Artifact must be scraped before processing"
+  logger = get_logger_from_context()
+  if base_crawl_event.crawl_depth + 1 > crawl_config["crawl_depth"]:
+    logger.info(f"Crawl depth {base_crawl_event.crawl_depth + 1} is greater than max crawl depth {crawl_config['crawl_depth']}, skipping")
+    return {"message": "Crawl depth is greater than max crawl depth, skipping"}
+
 
   if existing_artifact["crawl_depth"] <= base_crawl_event.crawl_depth:
-    print(f"Artifact {existing_artifact['url']} has already been processed at depth {existing_artifact['crawl_depth']}")
+    logger.info(f"Artifact {existing_artifact['url']} has already been processed at depth {existing_artifact['crawl_depth']}")
     return {"data": existing_artifact}
 
-  print(f"Processing outbound links for {existing_artifact['url']} at depth {existing_artifact['crawl_depth']}")
+  assert existing_artifact["crawl_status"] in ["scraped"], "Artifact must be scraped before processing"
 
+  logger.info(f"Processing outbound links for {existing_artifact['url']} at depth {existing_artifact['crawl_depth']}")
+
+  admin_supabase = await create_async_supabase_admin_client()
   await admin_supabase\
     .table("artifacts")\
     .update({
-      "crawl_depth": base_crawl_event
+      "crawl_depth": base_crawl_event.crawl_depth,
     })\
+    .eq("artifact_id", existing_artifact["artifact_id"])\
+    .execute()
+
+  artifact_contents = await admin_supabase\
+    .table("artifact_contents")\
+    .select("*")\
     .eq("artifact_id", existing_artifact["artifact_id"])\
     .execute()
 
   outbound_links = await admin_supabase\
     .table("artifact_links")\
     .select("*")\
-    .eq("source_artifact_id", existing_artifact["artifact_id"])\
+    .in_("source_artifact_content_id", [content["artifact_content_id"] for content in artifact_contents.data])\
     .limit(100)\
     .execute()
 
@@ -252,9 +267,9 @@ async def _process_existing_artifact(
       url=link["target_url"],
       crawl_depth=base_crawl_event.crawl_depth + 1,
       allowed_url_patterns=base_crawl_event.allowed_url_patterns
-    ) for link in outbound_links.data if base_crawl_event.crawl_depth + 1 <= MAX_CRAWL_DEPTH
+    ) for link in outbound_links.data
   ]
-  event_ids = await schedule_crawl(
+  event_ids = await _schedule_crawl(
     step_id=f"crawl-outbound-links",
     crawl_request=outbound_crawl_requests
   )
@@ -265,7 +280,6 @@ async def _crawl_links(
   scraper_result: WebScraperResult,
   base_crawl_event: CrawlRequestedEventData,
   crawl_config: CrawlConfig,
-  schedule_crawl: ScheduleCrawlFunction = None
 ) -> dict:
   """Process and store links for an artifact."""
   # Match sections and delete existing links
@@ -274,6 +288,9 @@ async def _crawl_links(
 
   # Create and insert new links
   insert_links_payload = _create_insert_links_payload(matched_sections, crawl_config)
+  if len(insert_links_payload) == 0:
+    return {"crawl_event_ids": [], "insert_ids": []}
+
   insert_response = await _insert_new_links(insert_links_payload)
 
   # Handle crawling of new links
@@ -285,7 +302,6 @@ async def _crawl_links(
   event_ids = await _schedule_link_crawls(
     links_to_crawl,
     base_crawl_event,
-    schedule_crawl
   )
 
   return {
@@ -303,7 +319,7 @@ def _match_artifact_sections(
     (artifact_content, scraped_section)
     for artifact_content in artifact_contents
     for scraped_section in scraper_result.scraped_sections
-    if (artifact_content["anchor_id"], artifact_content["content"]) == (scraped_section.id, scraped_section.content)
+    if (artifact_content["anchor_id"], artifact_content["parsed_text"]) == (scraped_section.id, scraped_section.content)
     and artifact_content["artifact_content_id"] not in used_artifact_contents
     and not used_artifact_contents.add(artifact_content["artifact_content_id"])
   ]
@@ -311,15 +327,20 @@ def _match_artifact_sections(
 async def _delete_existing_links(
   artifact_contents: List[ArtifactContent]
 ) -> None:
-  """Delete existing links for the given artifact contents."""
+  """Delete existing links for the given artifact contents in batches of 20."""
   admin_supabase = await create_async_supabase_admin_client()
-  await admin_supabase.table("artifact_links")\
-    .delete()\
-    .in_(
-      "source_artifact_content_id",
-      [content["artifact_content_id"] for content in artifact_contents]
-    )\
-    .execute()
+
+  # Get all content IDs
+  content_ids = [content["artifact_content_id"] for content in artifact_contents]
+
+  # Process in batches of 20
+  batch_size = 20
+  for i in range(0, len(content_ids), batch_size):
+    batch = content_ids[i:i + batch_size]
+    await admin_supabase.table("artifact_links")\
+      .delete()\
+      .in_("source_artifact_content_id", batch)\
+      .execute()
 
 def _create_insert_links_payload(
   matched_sections: List[tuple[ArtifactContent, ScrapedContent]],
@@ -334,7 +355,7 @@ def _create_insert_links_payload(
     )
     for (artifact_content, scraped_section) in matched_sections
     for link in scraped_section.scraped_links[:50]
-    if any(re.match(pattern, link.url) for pattern in crawl_config.allowed_url_patterns)
+    if any(re.match(pattern, link.url) for pattern in crawl_config["allowed_url_patterns"])
   ]
 
 async def _insert_new_links(
@@ -374,7 +395,6 @@ async def _filter_existing_links(
 async def _schedule_link_crawls(
   links: List[ArtifactLink],
   base_crawl_event: CrawlRequestedEventData,
-  schedule_crawl: ScheduleCrawlFunction
 ) -> List[str]:
   """Schedule crawls for new links if within depth limit."""
   if not links or base_crawl_event.crawl_depth + 1 > MAX_CRAWL_DEPTH:
@@ -388,7 +408,7 @@ async def _schedule_link_crawls(
     ) for link in links
   ]
 
-  return await schedule_crawl(
+  return await _schedule_crawl(
     step_id="crawl-outbound-links",
     crawl_request=event_payload
   )
@@ -438,7 +458,7 @@ async def _perform_scraping(
   url: str,
   scraping_config: ScrapingConfig
 ) -> WebScraperResult:
-  scraper = WebScraper()
+  scraper = WebScraper(scraper="playwright")
   return await scraper.async_scrape(url, scraping_config)
 
 async def _check_duplicate_content(
@@ -447,12 +467,13 @@ async def _check_duplicate_content(
 ) -> Optional[Artifact]:
   admin_supabase = await create_async_supabase_admin_client()
   content_hash = get_sha256_hash(content)
-
+  logger = get_logger_from_context()
   existing_hash_doc_response = await (
     admin_supabase
     .table("artifacts")
     .select("*")
     .eq("content_sha256", content_hash)
+    .in_("crawl_status", ["scraped", "scraping"])
     .is_("crawled_as_artifact_id", None)
     .limit(1)
     .maybe_single()
@@ -460,7 +481,7 @@ async def _check_duplicate_content(
   )
 
   if existing_hash_doc_response and existing_hash_doc_response.data:
-    print(f"Document with content hash {content_hash} already exists")
+    logger.info(f"Document with content hash {content_hash} already exists")
     await (
       admin_supabase
       .table("artifacts")
@@ -487,9 +508,10 @@ async def _process_artifact_sections(
   extraction_response: MetadataExtractionResponse
 ) -> List[ArtifactContent]:
   admin_supabase = await create_async_supabase_admin_client()
+  logger = get_logger_from_context()
   summary_embeddings = await _embed_strings([
-    f"{section.title}\n\n{section.summary}"
-    for section in scrape_response.scraped_sections
+    f"{section.title}\n\n{extraction_response.sections_data[i].section_summary}"
+    for i, section in enumerate(scrape_response.scraped_sections)
   ])
 
   upsert_artifact_content_payload: List[ArtifactContent] = [
@@ -506,12 +528,22 @@ async def _process_artifact_sections(
 
   upsert_response = await (
     admin_supabase
-    .table("artifacts_contents")
+    .table("artifact_contents")
     .upsert(upsert_artifact_content_payload, on_conflict="artifact_id, anchor_id")
     .execute()
   )
-
   return upsert_response.data
+
+async def _mark_artifact_as_crawl_failed(artifact: Artifact) -> None:
+  admin_supabase = await create_async_supabase_admin_client()
+  await admin_supabase\
+    .table("artifacts")\
+    .update({
+      "crawl_status": "scrape_failed"
+    })\
+    .eq("artifact_id", artifact["artifact_id"])\
+    .execute()
+
 
 
 
