@@ -3,7 +3,7 @@
     "api/chat/chat/**": {
       "maxDuration": 300
     },
-    "api/inngest": {
+    "api/inngest/index.py": {
       "maxDuration": 300
     }
   }
