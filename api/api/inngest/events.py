@@ -33,7 +33,7 @@ class CrawlRequestedEvent(BaseEvent):
   name: ClassVar[str] = "app/url.added"
 
 class ResumeCrawlEventData(BaseEvent):
-  pass
+  domain_id: str = Field(description="The ID of the domain to crawl")
 
 class ResumeCrawlEvent(BaseEvent):
   data: ResumeCrawlEventData
