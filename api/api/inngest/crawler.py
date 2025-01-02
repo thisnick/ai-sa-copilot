@@ -552,9 +552,19 @@ async def _process_artifact_sections(
   admin_supabase = await create_async_supabase_admin_client()
   logger = get_logger_from_context()
 
+  # Create a dictionary to track unique anchor_ids
+  seen_anchor_ids = {}
+  unique_sections = []
+
+  # Filter out duplicates while preserving order
+  for index, scraped_section in enumerate(scrape_response.scraped_sections):
+    if scraped_section.id not in seen_anchor_ids:
+      seen_anchor_ids[scraped_section.id] = index
+      unique_sections.append((index, scraped_section))
+
   summary_embeddings = await _embed_strings([
     f"{section.title}\n\n{extraction_response.sections_data[i].section_summary}"
-    for i, section in enumerate(scrape_response.scraped_sections)
+    for i, section in unique_sections
   ])
 
   upsert_artifact_content_payload: List[ArtifactContentInsert] = [
@@ -563,10 +573,10 @@ async def _process_artifact_sections(
       "title": scraped_section.title,
       "parsed_text": scraped_section.content,
       "anchor_id": scraped_section.id,
-      "summary": extraction_response.sections_data[index].section_summary,
-      "metadata": extraction_response.sections_data[index].section_data.model_dump(mode='json'),
-      "summary_embedding": str(summary_embeddings[index]),
-    }) for (index, scraped_section) in enumerate(scrape_response.scraped_sections)
+      "summary": extraction_response.sections_data[orig_index].section_summary,
+      "metadata": extraction_response.sections_data[orig_index].section_data.model_dump(mode='json'),
+      "summary_embedding": str(summary_embeddings[i]),
+    }) for i, (orig_index, scraped_section) in enumerate(unique_sections)
   ]
 
   upsert_response = await (
