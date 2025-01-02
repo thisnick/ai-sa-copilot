@@ -261,8 +261,9 @@ async def _process_existing_artifact(
   crawl_config: CrawlConfig,
 ) -> dict:
   logger = get_logger_from_context()
-  if base_crawl_event.crawl_depth + 1 > crawl_config["crawl_depth"]:
-    logger.info(f"Crawl depth {base_crawl_event.crawl_depth + 1} is greater than max crawl depth {crawl_config['crawl_depth']}, skipping")
+  max_crawl_depth = crawl_config.get("max_crawl_depth", MAX_CRAWL_DEPTH)
+  if base_crawl_event.crawl_depth + 1 > max_crawl_depth:
+    logger.info(f"Crawl depth {base_crawl_event.crawl_depth + 1} is greater than max crawl depth {max_crawl_depth}, skipping")
     return {"message": "Crawl depth is greater than max crawl depth, skipping"}
 
 
