@@ -14,6 +14,7 @@ import inngest
   ],
 )
 async def resume_crawl(ctx: inngest.Context, step: inngest.Step):
+  event = ResumeCrawlEvent.from_event(ctx.event)
   with with_logger(ctx.logger), with_inngest_step(step):
     batch_size = 100
     page = 0
@@ -22,7 +23,7 @@ async def resume_crawl(ctx: inngest.Context, step: inngest.Step):
     while True:
       sent_events = await step.run(
         f"crawl_url_batch_{page}",
-        lambda: _crawl_url_batch(page, batch_size),
+        lambda: _crawl_url_batch(event.data.domain_id, page, batch_size),
       )
       total_sent_events.extend(sent_events)
       if len(sent_events) < batch_size:
@@ -33,12 +34,13 @@ async def resume_crawl(ctx: inngest.Context, step: inngest.Step):
       "sent_events": total_sent_events,
     }
 
-async def _crawl_url_batch(page: int, batch_size: int) -> List[str]:
+async def _crawl_url_batch(domain_id: str, page: int, batch_size: int) -> List[str]:
   supabase = await create_async_supabase_admin_client()
   unfinished_artifacts = await (
     supabase
       .table("artifacts")
       .select("*")
+      .eq("domain_id", domain_id)
       .in_("crawl_status", ["discovered", "scraping", "scrape_failed"])
       .order("artifact_id")
       .range(page * batch_size, (page + 1) * batch_size - 1)
