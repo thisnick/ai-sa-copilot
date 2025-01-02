@@ -2,6 +2,9 @@
   "functions": {
     "api/chat/chat/**": {
       "maxDuration": 300
+    },
+    "api/inngest": {
+      "maxDuration": 300
     }
   }
 }
