@@ -169,8 +169,10 @@ export type Database = {
       artifacts: {
         Row: {
           artifact_id: string
+          content_sha256: string | null
           crawl_depth: number
           crawl_status: Database["public"]["Enums"]["enum_crawl_status"]
+          crawled_as_artifact_id: string | null
           created_at: string
           domain_id: string
           metadata: Json | null
@@ -181,8 +183,10 @@ export type Database = {
         }
         Insert: {
           artifact_id?: string
+          content_sha256?: string | null
           crawl_depth: number
           crawl_status?: Database["public"]["Enums"]["enum_crawl_status"]
+          crawled_as_artifact_id?: string | null
           created_at?: string
           domain_id: string
           metadata?: Json | null
@@ -193,8 +197,10 @@ export type Database = {
         }
         Update: {
           artifact_id?: string
+          content_sha256?: string | null
           crawl_depth?: number
           crawl_status?: Database["public"]["Enums"]["enum_crawl_status"]
+          crawled_as_artifact_id?: string | null
           created_at?: string
           domain_id?: string
           metadata?: Json | null
@@ -204,6 +210,13 @@ export type Database = {
           url?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "artifacts_crawled_as_artifact_id_fkey"
+            columns: ["crawled_as_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "artifacts"
+            referencedColumns: ["artifact_id"]
+          },
           {
             foreignKeyName: "artifacts_domain_id_fkey"
             columns: ["domain_id"]
@@ -456,6 +469,7 @@ export type Database = {
         Args: {
           query_embedding: string
           match_count: number
+          domain_id: string
           filter: Json
         }
         Returns: {

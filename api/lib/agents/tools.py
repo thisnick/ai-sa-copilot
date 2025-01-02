@@ -117,7 +117,10 @@ async def async_get_artifacts(
   )
   return [ArtifactWithLinks.model_validate(artifact) for artifact in artifacts_response.data]
 
-async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
+async def async_query_for_artifacts(
+  queries: List[str],
+  domain_id: str
+) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
   nomic_api_key = os.getenv("NOMIC_API_KEY")
   assert nomic_api_key is not None, "NOMIC_API_KEY is not set"
   embedding_client = NomicEmbeddings(api_key=nomic_api_key)
@@ -133,6 +136,7 @@ async def async_query_for_artifacts(queries: List[str]) -> Dict[Literal["artifac
     supabase.rpc("match_artifacts", {
       "query_embedding": embedding,
       "match_count": 4,
+      "domain_id": domain_id,
       "filter": {}
     }).execute()
     for embedding in embeddings.embeddings

@@ -65,8 +65,10 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
 
     """
 
-
-  async def query_for_artifacts(queries: List[str]) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]] | str:    # Create a new event loop for this sync function
+  async def query_for_artifacts(
+    context_variables: ContextVariables,
+    queries: List[str],
+  ) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]] | str:    # Create a new event loop for this sync function
     """Query for artifacts that are related to the query and return their summaries
 
     Arguments:
@@ -75,7 +77,9 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
     try:
       if isinstance(queries, str):
         queries = json.loads(queries)
-      return await async_query_for_artifacts(queries)
+      domain_id = context_variables.get("domain_id")
+      assert domain_id is not None, "Domain ID is required"
+      return await async_query_for_artifacts(queries, domain_id)
     except Exception as e:
       logging.error(f"Error in query_for_artifacts: {str(e)}")
       return f"Error querying for artifacts: {e}"

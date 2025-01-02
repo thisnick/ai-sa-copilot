@@ -15,28 +15,36 @@ class Artifact(TypedDict):
   crawl_depth: int
   crawl_status: CrawlStatus
   created_at: str
-  metadata: dict
-  parsed_text: str
-  summary: str
-  title: str
+  metadata: Optional[dict]
+  parsed_text: Optional[str]
+  summary: Optional[str]
+  title: Optional[str]
   url: str
+  content_sha256: Optional[str]
+  crawled_as_artifact_id: Optional[str]
 
-class ArtifactContent(TypedDict):
-  artifact_content_id: str
+
+class ArtifactContentInsert(TypedDict):
   artifact_id: str
-  created_at: str
   metadata: dict
   parsed_text: str
   summary: str
+  summary_embedding: str
   title: str
-  anchor_id: str
+  anchor_id: Optional[str]
 
-class ArtifactLink(TypedDict):
-  anchor_text: str
+class ArtifactContent(ArtifactContentInsert):
+  artifact_content_id: str
   created_at: str
-  id: str
+
+class ArtifactLinkInsert(TypedDict):
+  anchor_text: Optional[str]
   source_artifact_content_id: str
   target_url: str
+
+class ArtifactLink(ArtifactLinkInsert):
+  created_at: str
+  id: str
 
 class CrawlConfig(TypedDict):
   crawl_depth: int

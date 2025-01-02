@@ -5,8 +5,9 @@
   "scripts": {
     "next-dev": "next dev --turbo",
     "fastapi-dev": "cd ../api && devbox run poetry run fastapi dev dev --port 8399 --reload",
-    "inngest-dev": "pnpx inngest-cli@latest dev",
+    "inngest-dev": "npx inngest-cli@latest dev",
     "dev": "concurrently \"pnpm run next-dev\" \"pnpm run inngest-dev\" \"pnpm run fastapi-dev\"",
+    "frontend-dev": "concurrently \"pnpm run next-dev\" \"pnpm run inngest-dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from supabase import AsyncClient
 
 from contextvars import ContextVar

@@ -1,5 +1,7 @@
 import logging
 import inngest
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 from lib.config import Settings
 
@@ -12,3 +14,6 @@ inngest_client = inngest.Inngest(
   is_production=settings.vercel_env in ["production", "preview"],
 )
 
+
+
+step_context = ContextVar[inngest.Step | None]("step_context", default=None)
