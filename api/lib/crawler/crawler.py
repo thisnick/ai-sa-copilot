@@ -26,7 +26,7 @@ from lib.scraper.types import PageDataExtractionResult, ScrapedContent
 from lib.supabase import create_async_supabase_admin_client
 from lib.logger import get_logger_from_context
 
-from .events import CrawlRequestedEvent, CrawlRequestedEventData
+from api.inngest.events import CrawlRequestedEvent, CrawlRequestedEventData
 from .tools import get_sha256_hash
 
 MetadataExtractionResponse : TypeAlias = PageDataExtractionResult[ArtifactMetadata, ArtifactMetadata]

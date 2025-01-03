@@ -1,8 +1,8 @@
 from lib.inngest_context import with_inngest_step
 from lib.logger import with_logger
 from lib.inngest import inngest_client
-from .crawler import run_crawl_url
-from .events import CrawlRequestedEvent
+from lib.crawler.crawler import run_crawl_url
+from api.inngest.events import CrawlRequestedEvent
 import inngest
 
 @inngest_client.create_function(

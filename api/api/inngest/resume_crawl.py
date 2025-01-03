@@ -3,7 +3,7 @@ from lib.inngest_context import with_inngest_step, get_inngest_step_from_context
 from lib.logger import with_logger
 from lib.inngest import inngest_client
 from lib.supabase import create_async_supabase_admin_client
-from .events import ResumeCrawlEvent, CrawlRequestedEvent, CrawlRequestedEventData
+from api.inngest.events import ResumeCrawlEvent, CrawlRequestedEvent, CrawlRequestedEventData
 import inngest
 
 @inngest_client.create_function(

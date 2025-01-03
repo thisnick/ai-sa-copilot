@@ -38,3 +38,11 @@ class ResumeCrawlEventData(BaseModel):
 class ResumeCrawlEvent(BaseEvent):
   data: ResumeCrawlEventData
   name: ClassVar[str] = "app/crawl.resume"
+
+
+class ClusterArtifactsEventData(BaseModel):
+  domain_id: str = Field(description="The ID of the domain to crawl")
+
+class ClusterArtifactsEvent(BaseEvent):
+  data: ClusterArtifactsEventData
+  name: ClassVar[str] = "app/cluster.artifacts"
