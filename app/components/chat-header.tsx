@@ -10,6 +10,7 @@ import { PlusIcon } from './icons';
 import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { DomainSelector } from './domain-selector';
 
 function PureChatHeader({
   chatId,

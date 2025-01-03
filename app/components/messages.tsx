@@ -18,6 +18,7 @@ interface MessagesProps {
   reload: (
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
+  selectedDomainId: string;
 }
 
 function PureMessages({
@@ -28,6 +29,7 @@ function PureMessages({
   messages,
   setMessages,
   reload,
+  selectedDomainId,
 }: MessagesProps) {
   const [messagesContainerRef, messagesEndRef] =
     useScrollToBottom<HTMLDivElement>();
@@ -37,7 +39,7 @@ function PureMessages({
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
     >
-      {messages.length === 0 && <Overview />}
+      {messages.length === 0 && <Overview selectedDomainId={selectedDomainId} />}
 
       {messages.map((message, index) => (
         <PreviewMessage

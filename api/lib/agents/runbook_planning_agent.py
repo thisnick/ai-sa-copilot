@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Any, Dict, List
 from pydantic import TypeAdapter
 from pydantic.json import pydantic_encoder
 from swarm import AsyncAgent
@@ -95,17 +95,23 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     ]
     """
     try:
-      list_of_section_outline_adaptor = TypeAdapter(List[RunbookSectionOutline])
+      section_outline_list_of_dicts : List = []
+      list_of_section_outline_adaptor = TypeAdapter(List[RunbookSection])
       if isinstance(section_outlines, str):
-        section_outlines = json.loads(section_outlines)
+        section_outline_list_of_dicts = json.loads(section_outlines)
+      elif isinstance(section_outlines, list) and len(section_outlines) > 0 and isinstance(section_outlines[0], RunbookSectionOutline):
+        section_outline_list_of_dicts = [section_outline.model_dump() for section_outline in section_outlines]
+      elif isinstance(section_outlines, list) and len(section_outlines) > 0 and isinstance(section_outlines[0], dict):
+        section_outline_list_of_dicts = section_outlines
+      else:
+        raise ValueError(f"Invalid section outlines: {section_outlines}")
 
       if len(section_outlines) == 0:
         logging.warning("Attempted to create runbook outline with empty sections")
         return AsyncResult(
           value="No section outlines to create. Please include the outline in the argument section_outlines."
         )
-
-      list_of_section_outlines = list_of_section_outline_adaptor.validate_python(section_outlines)
+      list_of_section_outlines = list_of_section_outline_adaptor.validate_python(section_outline_list_of_dicts)
 
       if context_variables.get("debug", False):
         logging.debug("List of section outlines: %s", list_of_section_outlines)

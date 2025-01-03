@@ -5,8 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.types import ASGIApp
 
-from lib.agents.contexts import set_supabase_client
-from lib.supabase import get_server_supabase_client
+from lib.supabase import set_supabase_client_context, get_server_supabase_client
 
 class SupabaseContextMiddleware(BaseHTTPMiddleware):
   def __init__(self, app: ASGIApp):
@@ -25,10 +24,10 @@ class SupabaseContextMiddleware(BaseHTTPMiddleware):
       supabase = await get_server_supabase_client(None)
 
     # Set the context
-    set_supabase_client(supabase)
+    set_supabase_client_context(supabase)
     try:
       response = await call_next(request)
       return response
     finally:
       # Reset context and close client after request is done
-      set_supabase_client(None)
+      set_supabase_client_context(None)

@@ -13,10 +13,10 @@ fi
 
 THREAD_ID=$1
 MESSAGE=$2
-API_URL="http://localhost:3000/api/chat/chat"
+API_URL="http://127.0.0.1:8399/api/chat/chat"
 USER_ACCESS_TOKEN=$(poetry run python -m scripts.print_access_token)
 
-curl -X POST \
+curl -v \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${USER_ACCESS_TOKEN}" \
   --no-buffer \

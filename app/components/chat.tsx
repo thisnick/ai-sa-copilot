@@ -21,12 +21,12 @@ import { BlockStreamHandler } from './block-stream-handler';
 
 export function Chat({
   id,
-  domainId,
+  selectedDomainId,
   initialMessages,
   initialContext,
 }: {
   id: string;
-  domainId: string;
+  selectedDomainId: string;
   initialMessages: Array<Message>;
   initialContext: ContextVariables;
 }) {
@@ -54,7 +54,7 @@ export function Chat({
     experimental_prepareRequestBody: ({messages}) => ({
       message: messages[messages.length - 1].content,
       thread_id: id,
-      domain_id: domainId,
+      domain_id: selectedDomainId,
     }),
     onFinish: () => {
       mutate('/api/chat/chat');
@@ -88,6 +88,7 @@ export function Chat({
 
         <Messages
           chatId={id}
+          selectedDomainId={selectedDomainId}
           block={block}
           setBlock={setBlock}
           isLoading={isLoading}

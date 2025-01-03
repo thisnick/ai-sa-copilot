@@ -1,8 +1,16 @@
+'use server';
+
 import { convertToUIMessages } from "@/lib/api/utils";
 import { createClient } from "@/lib/supabase/server";
 import type { DBMessage, ContextVariables } from "@/lib/api/types";
 import { Tables } from "@/lib/supabase/database.types";
 import { notFound } from "next/navigation";
+import { cookies } from 'next/headers';
+
+export async function saveDomainId(domainId: string) {
+  const cookieStore = await cookies();
+  cookieStore.set('domain-id', domainId);
+}
 
 export async function getThreadState(threadId: string) {
   const supabase = await createClient();
