@@ -7,7 +7,7 @@ from swarm import AsyncSwarm
 from swarm.types import Message
 
 from lib.agents.agent_map import INITIAL_AGENT
-from lib.agents.contexts import get_supabase_client_from_context
+from lib.supabase import get_supabase_client_from_context
 from lib.config import Settings
 from lib.db.types import TopLevelCluster
 from .types import ContextVariables, KnowledgeTopic

@@ -29,7 +29,3 @@ async def get_server_supabase_client(
 
   return supabase
 
-__all__ = [
-  "get_server_supabase_client",
-  "create_async_supabase_admin_client",
-]

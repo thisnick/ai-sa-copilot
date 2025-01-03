@@ -2,14 +2,28 @@ import { cookies } from 'next/headers';
 
 import { Chat } from '@/components/chat';
 import { generateUUID } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/server';
+import { saveDomainId } from './actions';
 
 export default async function Page() {
   const id = generateUUID();
 
   const cookieStore = await cookies();
-  const modelIdFromCookie = cookieStore.get('model-id')?.value;
-
-  const domainId = "b54feb10-5011-429e-8585-35913d797d8e"
+  let domainIdFromCookie = cookieStore.get('domain-id')?.value;
+  if (!domainIdFromCookie) {
+    const supabase = await createClient();
+    const { data: domain, error } = await supabase.from('artifact_domains').select('id').limit(1).maybeSingle();
+    if (error) {
+      throw error;
+    }
+    if (domain) {
+      domainIdFromCookie = domain.id;
+      saveDomainId(domain.id);
+    }
+    else {
+      domainIdFromCookie = "b54feb10-5011-429e-8585-35913d797d8e";
+    }
+  }
 
   return (
     <Chat
@@ -17,7 +31,7 @@ export default async function Page() {
       id={id}
       initialMessages={[]}
       initialContext={{}}
-      domainId={domainId}
+      selectedDomainId={domainIdFromCookie}
     />
   );
 }

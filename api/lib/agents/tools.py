@@ -15,7 +15,7 @@ from .types import (
   ResearchTopic,
   RunbookSection
 )
-from .contexts import get_supabase_client_from_context
+from ..supabase.contexts import get_supabase_client_from_context
 
 
 async def async_get_knowledge_topics(domain_id: str) -> List[KnowledgeTopic]:

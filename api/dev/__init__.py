@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.chat.chat.stream_messages import router as chat_router
+from api.chat.router import router as chat_router
 from api.inngest.serve import serve_inngest
 from lib.middleware import SupabaseContextMiddleware
 

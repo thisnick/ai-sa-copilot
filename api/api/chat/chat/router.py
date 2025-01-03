@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from supabase import AsyncClient
 
-from lib.agents.contexts import get_supabase_client_from_context
+from lib.supabase import get_supabase_client_from_context
 from lib.agents.types import ContextVariables
 from lib.config import Settings
 from lib.db.types import Thread
@@ -215,7 +215,7 @@ async def save_thread_state(
     .execute()
   )
 
-@router.post("/chat")
+@router.post("")
 async def stream_messages(
   request: Request,
   protocol: Literal["data", "text"] = "data"

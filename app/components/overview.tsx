@@ -2,8 +2,13 @@ import { motion } from 'motion/react';
 import Link from 'next/link';
 
 import { MessageIcon } from './icons';
+import { DomainSelector } from './domain-selector';
 
-export const Overview = () => {
+export const Overview = ({
+  selectedDomainId,
+}: {
+  selectedDomainId: string;
+}) => {
   return (
     <motion.div
       key="overview"
@@ -24,6 +29,10 @@ export const Overview = () => {
         <p>
           For now, it only has documentation for Databricks, but more will be added.
         </p>
+        <DomainSelector
+          selectedDomainId={selectedDomainId}
+          className="order-1 md:order-2"
+        />
       </div>
     </motion.div>
   );
