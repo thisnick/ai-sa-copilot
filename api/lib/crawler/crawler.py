@@ -384,6 +384,7 @@ def _create_insert_links_payload(
   crawl_config: CrawlConfig
 ) -> List[ArtifactLinkInsert]:
   """Create payload for new links to be inserted."""
+  assert "allowed_url_patterns" in crawl_config, "Allowed URL patterns are required"
   return [
     ArtifactLinkInsert({
       "anchor_text": link.anchor_text,

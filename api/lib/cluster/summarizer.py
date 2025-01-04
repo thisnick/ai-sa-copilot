@@ -68,7 +68,7 @@ class ClusterSummarizer:
       prior_clusters=data['prior_clusters']
     )
 
-  async def generate_summary(self, domain_id: str, cluster_id: str, iteration: int) -> Optional[TopicSummary]:
+  async def generate_summary(self, domain_id: str, cluster_id: str, iteration: int, min_cluster_size: int = 10) -> Optional[TopicSummary]:
     """Recursively generates summaries for a cluster and its prerequisites"""
 
     # Check if summary already exists
@@ -79,7 +79,7 @@ class ClusterSummarizer:
     # Get cluster information
     cluster_info = await self.get_cluster_info(domain_id, cluster_id, iteration)
 
-    if cluster_info.member_count < 10:
+    if cluster_info.member_count < min_cluster_size:
       return None
 
     if cluster_info.member_count < 100:
@@ -87,14 +87,14 @@ class ClusterSummarizer:
 
     if cluster_info.iteration > 2:
       # Has prior clusters
-      prior_summaries = await self.ensure_prior_summaries(cluster_info)
+      prior_summaries = await self.ensure_prior_summaries(cluster_info, min_cluster_size)
       return await self.summarize_large_hierarchical_cluster(cluster_info, prior_summaries)
 
     # No prior clusters
     return await self.summarize_cluster_members(cluster_info)
 
 
-  async def ensure_prior_summaries(self, cluster_info: ClusterInfo) -> List[TopicSummary]:
+  async def ensure_prior_summaries(self, cluster_info: ClusterInfo, min_cluster_size: int) -> List[TopicSummary]:
     """Recursively ensures all prior cluster summaries exist and returns them"""
     prior_summaries: List[TopicSummary] = []
 
@@ -104,7 +104,8 @@ class ClusterSummarizer:
       tasks.append(self.generate_summary(
         cluster_info.domain_id,
         prior['cluster_id'],
-        prior['iteration']
+        prior['iteration'],
+        min_cluster_size=min_cluster_size
       ))
 
     summaries = await asyncio.gather(*tasks)
