@@ -17,13 +17,13 @@ function PureSuggestedActions({ chatId, append }: SuggestedActionsProps) {
   const suggestedActions = [
     {
       title: 'Create a runbook for',
-      label: 'deploying a basic web application',
-      action: 'Create a runbook for deploying and monitoring a basic web application, including health checks and common troubleshooting steps.',
+      label: 'deploying a basic Databricks instance',
+      action: 'Create a runbook for deploying and monitoring a basic Databricks instance, including health checks and common troubleshooting steps.',
     },
     {
       title: 'Generate a runbook about',
-      label: 'ML model training with MLflow and S3',
-      action: 'Create a detailed runbook for training ML models using MLflow, storing artifacts in S3, and managing model versions. Include best practices and common issues.',
+      label: 'ML model training with MLflow and S3 on Databricks',
+      action: 'Create a detailed runbook for training ML models using MLflow on Databricks, storing artifacts in S3, and managing model versions. Include best practices and common troubleshooting steps.',
     },
   ];
 
