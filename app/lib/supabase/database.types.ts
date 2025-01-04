@@ -77,6 +77,7 @@ export type Database = {
           created_at: string
           metadata: Json | null
           parsed_text: string
+          parsed_text_ts_vector: unknown | null
           summary: string
           summary_embedding: string
           title: string | null
@@ -88,6 +89,7 @@ export type Database = {
           created_at?: string
           metadata?: Json | null
           parsed_text: string
+          parsed_text_ts_vector?: unknown | null
           summary: string
           summary_embedding: string
           title?: string | null
@@ -99,6 +101,7 @@ export type Database = {
           created_at?: string
           metadata?: Json | null
           parsed_text?: string
+          parsed_text_ts_vector?: unknown | null
           summary?: string
           summary_embedding?: string
           title?: string | null
@@ -468,6 +471,25 @@ export type Database = {
       match_artifacts: {
         Args: {
           query_embedding: string
+          match_count: number
+          domain_id: string
+          filter: Json
+        }
+        Returns: {
+          artifact_id: string
+          artifact_content_id: string
+          metadata: Json
+          title: string
+          summary: string
+          summary_embedding: string
+          anchor_id: string
+          url: string
+          similarity: number
+        }[]
+      }
+      match_artifacts_fts: {
+        Args: {
+          search_query: string
           match_count: number
           domain_id: string
           filter: Json
