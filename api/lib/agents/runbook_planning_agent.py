@@ -31,7 +31,8 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
        - Section Title
        - Section Outline, which includes:
          - Main outcome this section needs to achieve
-         - High level steps that this section contains
+         - High level steps that this section contains. If the main sections from the articles
+           relevant to the section, your high level steps should come from the main sections.
        - Related Artifacts: Which artifacts (IDs) to use to write this section (required)
          If you are presenting the artifacts to the user and not as a part of a tool call,
          format each artifact as: [Artifact title (Artifact ID)](Artifact URL)

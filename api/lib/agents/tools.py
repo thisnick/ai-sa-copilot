@@ -72,7 +72,7 @@ def format_artifact(artifact: ArtifactWithLinks, include_links: bool = False, tr
     else:
       content = f"# Content (summary)\n\n{artifact.summary}"
   else:
-    content = f"# Content (full text)\n\n{artifact.parsed_text}"
+    content = f"# Summary\n\n{artifact.summary}\n\n# Content (full text)\n\n{artifact.parsed_text}"
 
   return f"""# Title: {artifact.title}
 
@@ -121,16 +121,16 @@ async def async_query_for_artifacts(
   queries: List[str],
   domain_id: str
 ) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
+  supabase = get_supabase_client_from_context()
   nomic_api_key = os.getenv("NOMIC_API_KEY")
   assert nomic_api_key is not None, "NOMIC_API_KEY is not set"
+
   embedding_client = NomicEmbeddings(api_key=nomic_api_key)
   embeddings = await embedding_client.embed_texts(
     texts=queries,
     model='nomic-embed-text-v1.5',
     task_type="search_query",
   )
-
-  supabase = get_supabase_client_from_context()
 
   responses = await asyncio.gather(*[
     supabase.rpc("match_artifacts", {
@@ -142,20 +142,34 @@ async def async_query_for_artifacts(
     for embedding in embeddings.embeddings
   ])
 
-  # Flatten the responses array and extract data
-  flattened_responses : List[ArtifactSearchResult] = [
-    {
-      "artifact_content_id": item["artifact_content_id"],
-      "url": item["url"],
-      "title": item["title"],
-      "summary": item["summary"],
-      "similarity": item["similarity"],
-      "main_sections": item.get("metadata", {}).get("main_sections", []),
-      "anchor_id": item.get("anchor_id")
-    }
-    for response in responses
-    for item in response.data
-  ]
+  responses.extend(await asyncio.gather(*[
+    supabase.rpc("match_artifacts_fts", {
+      "search_query": query,
+      "match_count": 4,
+      "domain_id": domain_id,
+      "filter": {}
+    }).execute()
+    for query in queries
+  ]))
+
+  # Use a dictionary to ensure uniqueness by artifact_content_id
+  unique_content_map : Dict[str, ArtifactSearchResult] = {}
+
+  for response in responses:
+    for item in response.data:
+      ac_id = item["artifact_content_id"]
+      if ac_id not in unique_content_map:
+        unique_content_map[ac_id] = {
+          "artifact_content_id": ac_id,
+          "url": item["url"],
+          "title": item["title"],
+          "summary": item["summary"],
+          "similarity": item["similarity"],
+          "main_sections": item.get("metadata", {}).get("main_sections", []),
+          "anchor_id": item.get("anchor_id")
+        }
+
+  flattened_responses = list(unique_content_map.values())
 
   return {
     "artifacts": flattened_responses,
