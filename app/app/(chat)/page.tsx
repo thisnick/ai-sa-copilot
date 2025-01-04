@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { Chat } from '@/components/chat';
 import { generateUUID } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
-import { saveDomainId } from './actions';
 
 export default async function Page() {
   const id = generateUUID();
@@ -18,7 +17,6 @@ export default async function Page() {
     }
     if (domain) {
       domainIdFromCookie = domain.id;
-      saveDomainId(domain.id);
     }
     else {
       domainIdFromCookie = "b54feb10-5011-429e-8585-35913d797d8e";

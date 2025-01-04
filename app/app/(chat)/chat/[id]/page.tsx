@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { Chat } from '@/components/chat';
 import { notFound } from 'next/navigation';
-import { getThreadState, saveDomainId } from '../../actions';
+import { getThreadState } from '../../actions';
 import { createClient } from '@/lib/supabase/server';
 
 
@@ -27,7 +27,6 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }
     if (domain) {
       domainIdFromCookie = domain.id;
-      saveDomainId(domain.id);
     }
     else {
       domainIdFromCookie = "b54feb10-5011-429e-8585-35913d797d8e";
