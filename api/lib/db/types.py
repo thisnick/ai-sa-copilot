@@ -46,9 +46,10 @@ class ArtifactLink(ArtifactLinkInsert):
   created_at: str
   id: str
 
-class CrawlConfig(TypedDict):
+class CrawlConfig(TypedDict, total=False):
   max_crawl_depth: int
   allowed_url_patterns: list[str]
+  min_cluster_size: int
 
 class ArtifactDomain(TypedDict):
   id: str
