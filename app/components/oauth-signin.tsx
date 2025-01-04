@@ -6,6 +6,7 @@ import { GithubIcon } from '@/components/icons';
 import { JSX, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getURL } from '@/lib/navigation';
+import { Loader2 } from 'lucide-react'
 type OAuthProviders = {
   name: Provider;
   displayName: string;
@@ -21,12 +22,12 @@ export default function OauthSignIn() {
     }
     /* Add desired OAuth providers here */
   ];
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<Provider | null>(null);
 
   const onLogin = async (provider: Provider) => {
-    setIsSubmitting(true); // Disable the button while the request is being handled
+    setLoadingProvider(provider);
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    await supabase.auth.signInWithOAuth({
       provider: provider,
       options: {
         redirectTo: getURL('/auth/callback'),
@@ -35,8 +36,7 @@ export default function OauthSignIn() {
         }
       }
     });
-
-    setIsSubmitting(false);
+    // Note: We don't need to reset loading state since we're redirecting
   };
 
   return (
@@ -52,14 +52,27 @@ export default function OauthSignIn() {
             type="submit"
             className="w-full"
             size="sm"
-            disabled={isSubmitting}
+            disabled={loadingProvider !== null}
             onClick={e => {
               e.preventDefault();
               onLogin(provider.name);
             }}
           >
-            <span className="mr-2">{provider.icon}</span>
-            <span>Sign in with {provider.displayName}</span>
+
+              {loadingProvider === provider.name ? (
+                // You can replace this with your preferred loading spinner component
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <span className="mr-2">
+                  {provider.icon}
+                </span>
+              )}
+
+            <span>
+              {loadingProvider === provider.name
+                ? 'Signing in...'
+                : `Sign in with ${provider.displayName}`}
+            </span>
           </Button>
         </form>
       ))}
