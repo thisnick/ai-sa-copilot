@@ -1,9 +1,6 @@
-import { cookies } from 'next/headers';
 import { Chat } from '@/components/chat';
 import { notFound } from 'next/navigation';
 import { getThreadState } from '../../actions';
-import { createClient } from '@/lib/supabase/server';
-
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -17,21 +14,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   const { messages, context } = threadState;
 
-  const cookieStore = await cookies();
-  let domainIdFromCookie = cookieStore.get('domain-id')?.value;
-  if (!domainIdFromCookie) {
-    const supabase = await createClient();
-    const { data: domain, error } = await supabase.from('artifact_domains').select('id').limit(1).maybeSingle();
-    if (error) {
-      throw error;
-    }
-    if (domain) {
-      domainIdFromCookie = domain.id;
-    }
-    else {
-      domainIdFromCookie = "b54feb10-5011-429e-8585-35913d797d8e";
-    }
-  }
+  const domainId = context.domain_id!;
+
 
   return (
     <Chat
@@ -39,7 +23,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       id={id}
       initialMessages={messages}
       initialContext={context}
-      selectedDomainId={domainIdFromCookie}
+      selectedDomainId={domainId}
     />
   );
 }
