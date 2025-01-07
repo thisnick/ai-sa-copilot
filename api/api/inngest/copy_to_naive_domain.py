@@ -1,5 +1,5 @@
 from typing import List
-from lib.db.types import Artifact
+from lib.db.types import Artifact, ArtifactContentInsert
 from lib.inngest_context import with_inngest_step, get_inngest_step_from_context
 from lib.logger import with_logger, get_logger_from_context
 from lib.inngest import inngest_client
@@ -62,6 +62,11 @@ async def _get_artifacts(domain_id: str, page: int) -> List[Artifact]:
   artifact_response = await supabase.table("artifacts").select("*").eq("domain_id", domain_id).range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1).execute()
   return [Artifact(**artifact_data) for artifact_data in artifact_response.data]
 
+async def _upsert_artifact_contents(payload: List[ArtifactContentInsert]) -> dict:
+  supabase = await create_async_supabase_admin_client()
+  artifact_content_response = await supabase.table("artifact_contents").upsert(payload, on_conflict="artifact_id,anchor_id").execute()
+  return artifact_content_response.data
+
 async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   supabase = await create_async_supabase_admin_client()
   step = get_inngest_step_from_context()
@@ -78,18 +83,21 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
       lambda: _embed_strings(chunks),
     )
     upsert_payload = [
-      {
-        "artifact_id": artifact["artifact_id"],
-        "metadata": {},
-        "parsed_text": chunk,
-        "summary": chunk,
-        "summary_embedding": str(embedding),
-        "title": chunk.splitlines()[0].strip(),
-        "anchor_id": str(i),
-      }
+      ArtifactContentInsert(
+        artifact_id=artifact["artifact_id"],
+        metadata={},
+        parsed_text=chunk,
+        summary=chunk,
+        summary_embedding=str(embedding),
+        title=chunk.splitlines()[0].strip(),
+        anchor_id=str(i),
+      )
       for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
-    artifact_content_response = await supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
+    artifact_content_response = await step.run(
+      f"upsert_artifact_contents_artifact_{artifact['artifact_id']}",
+      lambda: _upsert_artifact_contents(upsert_payload),
+    )
     contents_processed += len(upsert_payload)
   return {
     "artifacts_processed": len(artifacts),
