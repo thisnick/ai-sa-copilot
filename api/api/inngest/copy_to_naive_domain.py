@@ -70,20 +70,12 @@ async def _upsert_artifact_contents(payload: List[ArtifactContentInsert]) -> dic
   }
 
 async def _ingest_artifacts(domain_id: str, page: int) -> dict:
-  supabase = await create_async_supabase_admin_client()
-  step = get_inngest_step_from_context()
-  artifacts = await step.run(
-    f"get_artifacts_{page}",
-    lambda: _get_artifacts(domain_id, page),
-  )
+  artifacts = await _get_artifacts(domain_id, page)
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
   contents_processed = 0
   for artifact in artifacts:
     chunks = list(splitter.split(artifact["parsed_text"]))
-    embeddings = await step.run(
-      f"embed_artifact_{artifact['artifact_id']}",
-      lambda: _embed_strings(chunks),
-    )
+    embeddings = await _embed_strings(chunks)
     upsert_payload = [
       ArtifactContentInsert(
         artifact_id=artifact["artifact_id"],
@@ -96,10 +88,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
       )
       for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
-    artifact_content_response = await step.run(
-      f"upsert_artifact_contents_artifact_{artifact['artifact_id']}",
-      lambda: _upsert_artifact_contents(upsert_payload),
-    )
+    artifact_content_response = await _upsert_artifact_contents(upsert_payload)
     contents_processed += len(upsert_payload)
   return {
     "artifacts_processed": len(artifacts),
