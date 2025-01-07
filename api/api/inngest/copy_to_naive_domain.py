@@ -10,7 +10,7 @@ import inngest
 from lib.text_splitter import HierarchicalMarkdownSplitter
 from lib.config import Settings
 
-BATCH_SIZE = 100
+BATCH_SIZE = 50
 settings = Settings()
 
 @inngest_client.create_function(
