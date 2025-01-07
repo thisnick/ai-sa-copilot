@@ -39,13 +39,11 @@ async def _copy_to_naive_domain(source_domain_id: str, target_domain_id: str) ->
       lambda: _ingest_artifacts(target_domain_id, page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1),
     )
     artifacts_processed += artifact_content_response["artifacts_processed"]
-    artifact_contents_processed += artifact_content_response["artifact_contents_processed"]
     if artifact_content_response["artifacts_processed"] < BATCH_SIZE:
       break
     page += 1
   return {
     "artifacts_processed": artifacts_processed,
-    "artifact_contents_processed": artifact_contents_processed,
   }
 
 async def _copy_domain_artifacts(source_domain_id: str, target_domain_id: str) -> int:
@@ -89,7 +87,6 @@ async def _ingest_artifacts(domain_id: str, range_start: int, range_end: int) ->
       }, on_conflict="artifact_id,anchor_id").execute()
   return {
     "artifacts_processed": len(artifact_response.data),
-    "artifact_contents_processed": len(artifact_content_response.data),
   }
 async def _embed_strings(texts: List[str]) -> List[List[float]]:
   from lib.nomic import NomicEmbeddings
