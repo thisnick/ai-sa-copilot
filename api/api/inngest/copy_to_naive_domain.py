@@ -57,24 +57,20 @@ async def _copy_domain_artifacts(source_domain_id: str, target_domain_id: str) -
   ).execute()
   return int(artifact_response.data)
 
+async def _get_artifacts(domain_id: str, page: int) -> List[Artifact]:
+  supabase = await create_async_supabase_admin_client()
+  artifact_response = await supabase.table("artifacts").select("*").eq("domain_id", domain_id).range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1).execute()
+  return [Artifact(**artifact_data) for artifact_data in artifact_response.data]
+
 async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   supabase = await create_async_supabase_admin_client()
   step = get_inngest_step_from_context()
-  artifact_response = await (
-    supabase
-      .table("artifacts")
-      .select("*")
-      .eq("domain_id", domain_id)
-      .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1)
-      .execute()
+  artifacts = await step.run(
+    f"get_artifacts_{page}",
+    lambda: _get_artifacts(domain_id, page),
   )
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
-  valid_artifacts = [
-    Artifact(**artifact_data)
-    for artifact_data in artifact_response.data
-    if artifact_data["crawl_status"] == "scraped" and artifact_data["parsed_text"] is not None
-  ]
-  for artifact in valid_artifacts:
+  for artifact in artifacts:
     chunks = list(splitter.split(artifact.parsed_text))
     embeddings = await step.run(
       f"embed_artifact_{artifact.artifact_id}",
