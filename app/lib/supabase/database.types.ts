@@ -118,22 +118,25 @@ export type Database = {
       }
       artifact_domains: {
         Row: {
-          crawl_config: Json
+          config: Json
           created_at: string
           id: string
           name: string
+          visibility: Database["public"]["Enums"]["domain_visibility"]
         }
         Insert: {
-          crawl_config: Json
+          config: Json
           created_at?: string
           id?: string
           name: string
+          visibility?: Database["public"]["Enums"]["domain_visibility"]
         }
         Update: {
-          crawl_config?: Json
+          config?: Json
           created_at?: string
           id?: string
           name?: string
+          visibility?: Database["public"]["Enums"]["domain_visibility"]
         }
         Relationships: []
       }
@@ -412,6 +415,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      copy_domain_artifacts: {
+        Args: {
+          source_domain_id: string
+          target_domain_id: string
+        }
+        Returns: number
+      }
       detect_article_clusters: {
         Args: {
           target_domain_id: string
@@ -508,6 +518,7 @@ export type Database = {
       }
     }
     Enums: {
+      domain_visibility: "public" | "unreleased"
       enum_crawl_status: "discovered" | "scraped" | "scrape_failed" | "scraping"
       enum_thread_type: "runbook_generator"
     }

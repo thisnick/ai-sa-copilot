@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from pydantic import TypeAdapter
 from pydantic.json import pydantic_encoder
 from swarm import AsyncAgent
@@ -10,7 +10,7 @@ from lib.config import Settings
 
 from .agent_map import AGENT_RUNBOOK_PLANNING
 from .types import ContextVariables, RunbookSection, RunbookSectionOutline
-from .tools import format_topic_artifacts
+from .tools import format_topic_artifacts, format_runbook_section_outlines
 
 def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
 
@@ -36,7 +36,11 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
        - Related Artifacts: Which artifacts (IDs) to use to write this section (required)
          If you are presenting the artifacts to the user and not as a part of a tool call,
          format each artifact as: [Artifact title (Artifact ID)](Artifact URL)
-    4. If user has additional feedback, call `create_runbook_outline` to incorporate the feedback.
+    4. If user has additional feedback, there are a few ways to encorporate the feedback:
+       - Call `create_runbook_outline` to rewrite the entire runbook outline
+       - Call `insert_runbook_section` to add a new section to the runbook outline at a specific index
+       - Call `update_runbook_section` to update an existing section in the runbook outline at a specific index
+       - Call `delete_runbook_section` to remove a section from the runbook outline at a specific index
     5. Once the user approves the outline, call `start_writing_runbook` to start writing
        the runbook.
     6. If the user is asking you to do something that you are unable to do, such as
@@ -60,7 +64,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     {format_topic_artifacts(saved_artifacts or {}, treat_metadata_as_content=True)}
 
     Previously written runbook outline:
-    {json.dumps(runbook_sections, indent=2, default=pydantic_encoder) or "None"}
+    {format_runbook_section_outlines(runbook_sections or []) or "None"}
     """
     return prompt
 
@@ -78,12 +82,55 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     return AsyncResult(
       agent=create_runbook_section_writing_agent(settings),
       context_variables={
-        "current_runbook_section": 0
+        "current_runbook_section": get_next_unwritten_section_index(context_variables, 0)
+      }
+    )
+
+  async def insert_runbook_section(context_variables: ContextVariables, section_outline: RunbookSectionOutline, index: int) -> AsyncResult:
+    """Insert the section outline into the runbook sections array at the specified index."""
+    runbook_sections = context_variables.get("runbook_sections") or []
+
+    # Ensure the insertion index fits safely within the list (met or at the end).
+    # You can decide what to do if the index is below 0 or above len(runbook_sections).
+    if index < 0:
+      index = 0
+    if index > len(runbook_sections):
+      index = len(runbook_sections)
+
+    runbook_sections.insert(index, RunbookSection(**section_outline.model_dump()))
+
+    return AsyncResult(
+      value="Section outline inserted successfully",
+      context_variables={
+        "runbook_sections": runbook_sections,
+      }
+    )
+
+  async def update_runbook_section(context_variables: ContextVariables, section_outline: RunbookSectionOutline, index: int) -> AsyncResult:
+    """Update the section outline at the specified index."""
+    runbook_sections = context_variables.get("runbook_sections") or []
+    runbook_sections[index] = RunbookSection(**section_outline.model_dump())
+    return AsyncResult(
+      value="Section outline updated successfully",
+      context_variables={
+        "runbook_sections": runbook_sections,
+      }
+    )
+
+  async def delete_runbook_section(context_variables: ContextVariables, index: int) -> AsyncResult:
+    """Delete the section outline at the specified index."""
+    runbook_sections = context_variables.get("runbook_sections") or []
+    runbook_sections.pop(index)
+    return AsyncResult(
+      value="Section outline deleted successfully",
+      context_variables={
+        "runbook_sections": runbook_sections,
       }
     )
 
   async def create_runbook_outline(context_variables: ContextVariables, section_outlines: List[RunbookSectionOutline]) -> AsyncResult:
-    """Save the section outline you created.
+    """save the section outline you created and replace the existing one. If there is an existing outline,
+    it will be replaced with the new one.
 
     Arguments:
     - section_outlines: an array of section outlines. E.g. [
@@ -98,12 +145,8 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     try:
       section_outline_list_of_dicts : List = []
       list_of_section_outline_adaptor = TypeAdapter(List[RunbookSection])
-      if isinstance(section_outlines, str):
-        section_outline_list_of_dicts = json.loads(section_outlines)
-      elif isinstance(section_outlines, list) and len(section_outlines) > 0 and isinstance(section_outlines[0], RunbookSectionOutline):
+      if isinstance(section_outlines, list) and len(section_outlines) > 0 and isinstance(section_outlines[0], RunbookSectionOutline):
         section_outline_list_of_dicts = [section_outline.model_dump() for section_outline in section_outlines]
-      elif isinstance(section_outlines, list) and len(section_outlines) > 0 and isinstance(section_outlines[0], dict):
-        section_outline_list_of_dicts = section_outlines
       else:
         raise ValueError(f"Invalid section outlines: {section_outlines}")
 
@@ -127,6 +170,14 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
       logging.error(f"Error creating runbook outline: {str(e)}")
       return AsyncResult(value=f"Error creating runbook outline: {e}")
 
+  def get_next_unwritten_section_index(context_variables: ContextVariables, start_index: int) -> Optional[int]:
+    """Get the next unwritten section from the runbook sections array."""
+    runbook_sections = context_variables.get("runbook_sections") or []
+    for idx, section in enumerate(runbook_sections[start_index:]):
+      if not section.content:
+        return idx
+    return None
+
   async def handoff_to_research_coordinator_agent(context_variables: ContextVariables):
     """Hand off the control back to the research coordinator agent, who can perform tasks
     such as researching for a topic."""
@@ -142,7 +193,10 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     functions=[
       create_runbook_outline,
       start_writing_runbook,
-      handoff_to_research_coordinator_agent
+      handoff_to_research_coordinator_agent,
+      insert_runbook_section,
+      update_runbook_section,
+      delete_runbook_section
     ],
     tool_choice="auto",
     model=settings.agent_llm_model

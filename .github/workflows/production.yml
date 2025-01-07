@@ -17,7 +17,7 @@ jobs:
       SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET: ${{ secrets.SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v1
         with:

@@ -28,6 +28,8 @@ playwright = "^1.49.1"
 nest-asyncio = "^1.6.0"
 fastapi-cli = "^0.0.7"
 undetected-playwright = "^0.3.0"
+pytest = "^8.3.4"
+pytest-asyncio = "^0.25.1"
 
 [build-system]
 requires = ["poetry-core"]

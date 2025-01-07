@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from swarm import AsyncAgent
 from swarm.types import AsyncResult
@@ -166,14 +166,22 @@ Remember:
       logging.error(f"Error in retrieve_artifacts: {str(e)}")
       return AsyncResult(value=f"Error retrieving artifacts: {e}")
 
+  def get_next_unwritten_section_index(context_variables: ContextVariables, start_index: int) -> Optional[int]:
+    """Get the next unwritten section from the runbook sections array."""
+    runbook_sections = context_variables.get("runbook_sections") or []
+    for idx, section in enumerate(runbook_sections[start_index:]):
+      if not section.content:
+        return idx
+    return None
+
   async def submit_writing_for_section(
-    context_variables: Dict[str, Any],
+    context_variables: ContextVariables,
     section_content: str,
     continue_writing_next_section: bool = True
   ) -> AsyncResult:
     try:
-      current_section_idx = context_variables.get("current_runbook_section", 0)
-      all_sections = context_variables.get("runbook_sections", []).copy()
+      current_section_idx = context_variables.get("current_runbook_section") or 0
+      all_sections = (context_variables.get("runbook_sections") or []).copy()
 
       if not all_sections:
         logging.warning("No runbook sections found in context")
@@ -181,8 +189,9 @@ Remember:
 
       current_section = all_sections[current_section_idx]
       current_section.content = section_content
+      next_unwritten_section_index = get_next_unwritten_section_index(context_variables, current_section_idx + 1)
 
-      if current_section_idx + 1 >= len(all_sections) or not continue_writing_next_section:
+      if not next_unwritten_section_index or not continue_writing_next_section:
         if context_variables.get("debug", False):
           logging.debug("Session writing complete: %s", context_variables.get("runbook_sections", {}))
 
@@ -202,7 +211,7 @@ Remember:
         value=f"Section {current_section_idx + 1} written. Ready to write the next section.",
         context_variables={
           "runbook_sections": all_sections,
-          "current_runbook_section": current_section_idx + 1
+          "current_runbook_section": next_unwritten_section_index
         },
         agent=create_runbook_section_writing_agent(settings)
       )

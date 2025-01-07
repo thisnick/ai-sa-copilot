@@ -5,14 +5,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test_db:
     runs-on: ubuntu-latest
 
     env:
       SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET: ${{ secrets.SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v1
         with:
@@ -34,3 +34,15 @@ jobs:
             git diff
             exit 1
           fi
+
+  test_api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install devbox
+        uses: jetify-com/devbox-install-action@v0.11.0
+
+      - name: Run pytest
+        working-directory: ./api
+        run: devbox run poetry install && devbox run poetry run pytest
