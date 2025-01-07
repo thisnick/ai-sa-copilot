@@ -88,10 +88,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
       }
       for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
-    artifact_content_response = await step.run(
-      f"upsert_artifact_contents_artifact_{artifact['artifact_id']}",
-      lambda: supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
-    )
+    artifact_content_response = await supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
     artifacts_processed += len(upsert_payload)
   return {
     "artifacts_processed": artifacts_processed,
