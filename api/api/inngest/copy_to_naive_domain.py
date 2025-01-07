@@ -65,7 +65,9 @@ async def _get_artifacts(domain_id: str, page: int) -> List[Artifact]:
 async def _upsert_artifact_contents(payload: List[ArtifactContentInsert]) -> dict:
   supabase = await create_async_supabase_admin_client()
   artifact_content_response = await supabase.table("artifact_contents").upsert(payload, on_conflict="artifact_id,anchor_id").execute()
-  return artifact_content_response.data
+  return {
+    "artifact_contents_processed": len(artifact_content_response.data),
+  }
 
 async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   supabase = await create_async_supabase_admin_client()
