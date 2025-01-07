@@ -21,7 +21,7 @@ from ..supabase.contexts import get_supabase_client_from_context
 async def async_get_knowledge_topics(domain_id: str) -> List[KnowledgeTopic]:
   supabase = get_supabase_client_from_context()
   top_level_clusters_response = await supabase.rpc("get_top_level_clusters", {"target_domain_id": domain_id}).execute()
-  top_level_clusters = cast(List[TopLevelCluster], top_level_clusters_response.data)
+  top_level_clusters = cast(List[TopLevelCluster], top_level_clusters_response.data[:50])
 
   results = [
     KnowledgeTopic(
