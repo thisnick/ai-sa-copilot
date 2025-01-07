@@ -73,7 +73,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   for artifact in artifacts:
     chunks = list(splitter.split(artifact["parsed_text"]))
     embeddings = await step.run(
-      f"embed_artifact_{artifact.artifact_id}",
+      f"embed_artifact_{artifact['artifact_id']}",
       lambda: _embed_strings(chunks),
     )
     upsert_payload = [
