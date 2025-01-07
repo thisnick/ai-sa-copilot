@@ -70,6 +70,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
     lambda: _get_artifacts(domain_id, page),
   )
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
+  contents_processed = 0
   for artifact in artifacts:
     chunks = list(splitter.split(artifact["parsed_text"]))
     embeddings = await step.run(
@@ -88,14 +89,13 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
       }
       for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
-    artifact_content_response = await step.run(
-      f"upsert_artifact_contents_artifact_{artifact['artifact_id']}",
-      lambda: supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
-    )
-    artifacts_processed += len(upsert_payload)
+    artifact_content_response = await supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
+    contents_processed += len(upsert_payload)
   return {
-    "artifacts_processed": artifacts_processed,
+    "artifacts_processed": len(artifacts),
+    "contents_processed": contents_processed,
   }
+
 async def _embed_strings(texts: List[str]) -> List[List[float]]:
   from lib.nomic import NomicEmbeddings
 
