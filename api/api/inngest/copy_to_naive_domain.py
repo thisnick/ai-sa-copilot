@@ -71,7 +71,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   )
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
   for artifact in artifacts:
-    chunks = list(splitter.split(artifact.parsed_text))
+    chunks = list(splitter.split(artifact["parsed_text"]))
     embeddings = await step.run(
       f"embed_artifact_{artifact.artifact_id}",
       lambda: _embed_strings(chunks),
@@ -89,7 +89,7 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
       for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
     ]
     artifact_content_response = await step.run(
-      f"upsert_artifact_contents_artifact_{artifact.artifact_id}",
+      f"upsert_artifact_contents_artifact_{artifact['artifact_id']}",
       lambda: supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
     )
     artifacts_processed += len(upsert_payload)
