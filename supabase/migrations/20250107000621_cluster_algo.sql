@@ -29,7 +29,7 @@ BEGIN
       crawled_as_artifact_id AS target_id,
       1 AS weight
     FROM artifacts
-    WHERE crawled_as_artifact_id IS NOT NULL 
+    WHERE crawled_as_artifact_id IS NOT NULL
       AND domain_id = target_domain_id
   )
   SELECT *
@@ -44,7 +44,7 @@ BEGIN
   ) all_links;
 
   -- Get total edge weight for normalization
-  SELECT SUM(weight) INTO total_edge_weight FROM temp_edges;
+  SELECT SUM(weight) / 2 INTO total_edge_weight FROM temp_edges;
 
   -- Create temporary nodes table
   CREATE TEMPORARY TABLE IF NOT EXISTS temp_nodes AS
