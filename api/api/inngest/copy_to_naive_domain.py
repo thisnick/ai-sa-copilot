@@ -36,7 +36,7 @@ async def _copy_to_naive_domain(source_domain_id: str, target_domain_id: str) ->
   while True:
     artifact_content_response = await step.run(
       f"copy_artifacts_page_{page}",
-      lambda: _ingest_artifacts(target_domain_id, page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1),
+      lambda: _ingest_artifacts(target_domain_id, page),
     )
     artifacts_processed += artifact_content_response["artifacts_processed"]
     if artifact_content_response["artifacts_processed"] < BATCH_SIZE:
@@ -57,36 +57,48 @@ async def _copy_domain_artifacts(source_domain_id: str, target_domain_id: str) -
   ).execute()
   return int(artifact_response.data)
 
-async def _ingest_artifacts(domain_id: str, range_start: int, range_end: int) -> dict:
+async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   supabase = await create_async_supabase_admin_client()
+  step = get_inngest_step_from_context()
   artifact_response = await (
     supabase
       .table("artifacts")
       .select("*")
       .eq("domain_id", domain_id)
-      .range(range_start, range_end)
+      .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1)
       .execute()
   )
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
-  for artifact_data in artifact_response.data:
-    artifact = Artifact(**artifact_data)
-    if artifact["crawl_status"] != "scraped" or artifact["parsed_text"] is None:
-      continue
-    chunks = list(splitter.split(artifact["parsed_text"]))
-    embeddings = await _embed_strings(chunks)
-    for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-      title = chunk.splitlines()[0].strip()
-      artifact_content_response = await supabase.table("artifact_contents").upsert({
+  valid_artifacts = [
+    Artifact(**artifact_data)
+    for artifact_data in artifact_response.data
+    if artifact_data["crawl_status"] == "scraped" and artifact_data["parsed_text"] is not None
+  ]
+  for artifact in valid_artifacts:
+    chunks = list(splitter.split(artifact.parsed_text))
+    embeddings = await step.run(
+      f"embed_artifact_{artifact.artifact_id}",
+      lambda: _embed_strings(chunks),
+    )
+    upsert_payload = [
+      {
         "artifact_id": artifact["artifact_id"],
         "metadata": {},
         "parsed_text": chunk,
         "summary": chunk,
-        "summary_embedding": embedding,
-        "title": title,
+        "summary_embedding": str(embedding),
+        "title": chunk.splitlines()[0].strip(),
         "anchor_id": str(i),
-      }, on_conflict="artifact_id,anchor_id").execute()
+      }
+      for i, (chunk, embedding) in enumerate(zip(chunks, embeddings))
+    ]
+    artifact_content_response = await step.run(
+      f"upsert_artifact_contents_artifact_{artifact.artifact_id}",
+      lambda: supabase.table("artifact_contents").upsert(upsert_payload, on_conflict="artifact_id,anchor_id").execute()
+    )
+    artifacts_processed += len(upsert_payload)
   return {
-    "artifacts_processed": len(artifact_response.data),
+    "artifacts_processed": artifacts_processed,
   }
 async def _embed_strings(texts: List[str]) -> List[List[float]]:
   from lib.nomic import NomicEmbeddings
