@@ -46,3 +46,11 @@ class ClusterArtifactsEventData(BaseModel):
 class ClusterArtifactsEvent(BaseEvent):
   data: ClusterArtifactsEventData
   name: ClassVar[str] = "app/cluster.artifacts"
+
+class CopyToNaiveDomainEventData(BaseModel):
+  source_domain_id: str = Field(description="The ID of the source domain")
+  target_domain_id: str = Field(description="The ID of the target domain")
+
+class CopyToNaiveDomainEvent(BaseEvent):
+  data: CopyToNaiveDomainEventData
+  name: ClassVar[str] = "one-off/copy-to-naive-domain"

@@ -125,7 +125,12 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
       return AsyncResult(value=f"Error kicking off research: {e}")
 
   async def handoff_to_runbook_planning_agent(context_variables: ContextVariables) -> AsyncResult:
-    """Hand off the research results to the outline agent"""
+    """Given you have all the artifacts needed to write the runbook, hand off the
+    runbook planning task to the runbook planning agent. This agent can be used to:
+    * Plan the runbook structure
+    * Make changes to the runbook structure (add, remove, or change a section outline)
+    * Once done, it will also handle writing the runbook
+    """
     from .runbook_planning_agent import create_runbook_planning_agent
     runbook_planning_agent = create_runbook_planning_agent(settings)
 
@@ -146,7 +151,10 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     )
 
   async def handoff_to_section_writing_agent(context_variables: ContextVariables, section_number: int) -> AsyncResult:
-    """Hand off the research results to the section writing agent"""
+    """Ask the section writing agent to rewrite a particular section. This agent can make copy edits to
+    a section, but cannot change the structure or goals of a section. For that, you will need to call
+    handoff_to_runbook_planning_agent.
+    """
     from .runbook_section_writing_agent import create_runbook_section_writing_agent
     runbook_section_writing_agent = create_runbook_section_writing_agent(settings)
 

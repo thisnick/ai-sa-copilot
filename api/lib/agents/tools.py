@@ -104,7 +104,19 @@ def format_written_sections(sections: List[RunbookSection], up_to: Optional[int]
   ]) or "None"
 
 def format_runbook_section_outline(section: RunbookSection) -> str:
-  return f"## Section Title: {section.section_title}\n\n## Outline:\n{section.outline}"
+  return (
+    f"## Section Title: {section.section_title}\n\n"
+    f"## Outline:\n\n{section.outline}\n\n"
+    f"## Related Artifacts IDs:\n\n"
+    f"{'\n'.join([f"- {artifact_id}" for artifact_id in section.related_artifacts]) if section.related_artifacts else 'None'}"
+  )
+
+
+def format_runbook_section_outlines(sections: List[RunbookSection]) -> str:
+  return "\n\n---\n\n".join([
+    f"# Section Index: {i}\n\n{format_runbook_section_outline(section)}"
+    for i, section in enumerate(sections)
+  ])
 
 async def async_get_artifacts(
   artifact_content_ids: List[str]
@@ -119,7 +131,9 @@ async def async_get_artifacts(
 
 async def async_query_for_artifacts(
   queries: List[str],
-  domain_id: str
+  domain_id: str,
+  embedding_search: bool = True,
+  full_text_search: bool = True,
 ) -> Dict[Literal["artifacts"], List[ArtifactSearchResult]]:
   supabase = get_supabase_client_from_context()
   nomic_api_key = os.getenv("NOMIC_API_KEY")
@@ -132,18 +146,22 @@ async def async_query_for_artifacts(
     task_type="search_query",
   )
 
-  responses = await asyncio.gather(*[
-    supabase.rpc("match_artifacts", {
+  responses = []
+
+  if embedding_search:
+    responses.extend(await asyncio.gather(*[
+      supabase.rpc("match_artifacts", {
       "query_embedding": embedding,
       "match_count": 4,
       "domain_id": domain_id,
       "filter": {}
     }).execute()
-    for embedding in embeddings.embeddings
-  ])
+      for embedding in embeddings.embeddings
+    ]))
 
-  responses.extend(await asyncio.gather(*[
-    supabase.rpc("match_artifacts_fts", {
+  if full_text_search:
+    responses.extend(await asyncio.gather(*[
+      supabase.rpc("match_artifacts_fts", {
       "search_query": query,
       "match_count": 4,
       "domain_id": domain_id,

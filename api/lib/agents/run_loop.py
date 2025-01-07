@@ -9,7 +9,7 @@ from swarm.types import Message
 from lib.agents.agent_map import INITIAL_AGENT
 from lib.supabase import get_supabase_client_from_context
 from lib.config import Settings
-from lib.db.types import TopLevelCluster
+from lib.db.types import ArtifactDomain, TopLevelCluster
 from .types import ContextVariables, KnowledgeTopic
 from .agent_factory import create_agent
 from .llm import AsyncLiteLLM
@@ -20,7 +20,23 @@ async def stream_response(
   context_variables: ContextVariables = {},
   settings: Settings = Settings(),
 ) -> AsyncStreamingResponse:
-  agent_name = agent_name or INITIAL_AGENT
+  domain_id = context_variables.get("domain_id")
+  assert domain_id is not None, "domain_id is required"
+  supabase = get_supabase_client_from_context()
+  domain_response = await (
+    supabase
+    .table("artifact_domains")
+    .select("*")
+    .eq("id", domain_id)
+    .limit(1)
+    .maybe_single()
+    .execute()
+  )
+  assert domain_response and domain_response.data, "domain not found"
+  domain = cast(ArtifactDomain, domain_response.data)
+  starting_agent = domain.get("config", {}).get("starting_agent") or INITIAL_AGENT
+
+  agent_name = agent_name or starting_agent
   agent = create_agent(settings, agent_name)
   print("created agent", agent)
   llm_client = AsyncLiteLLM()

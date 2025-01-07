@@ -12,7 +12,7 @@ from lib.db.types import (
   ArtifactDomain,
   ArtifactLink,
   ArtifactLinkInsert,
-  CrawlConfig,
+  DomainConfig,
 )
 from lib.metadata import ArtifactMetadata
 from lib.scraper import (
@@ -46,23 +46,27 @@ async def run_crawl_url(
 
   # Validate and get domain config
   artifact_domain = await _get_domain(crawl_request)
-  crawl_config = artifact_domain["crawl_config"]
+  config = artifact_domain["config"]
 
-  if not crawl_config:
+  if not config:
     logger.warning(f"Domain {crawl_request.domain_id} does not have a crawl config")
     return {"message": "Domain does not have a crawl config, skipping"}
 
-  if not crawl_config.get("allowed_url_patterns"):
+  if config.get("crawler_disabled"):
+    logger.info(f"Crawler is disabled for domain {crawl_request.domain_id}, skipping")
+    return {"message": "Crawler is disabled, skipping"}
+
+  if not config.get("allowed_url_patterns"):
     logger.info(f"Domain {crawl_request.domain_id} does not have any allowed URL patterns")
     return {"message": "Domain does not have any allowed URL patterns, skipping"}
 
   # Check if URL matches allowed URL patterns
-  if not any(re.match(pattern, crawl_request.url) for pattern in crawl_config.get("allowed_url_patterns", [])):
+  if not any(re.match(pattern, crawl_request.url) for pattern in config.get("allowed_url_patterns", [])):
     logger.info(f"URL {crawl_request.url} does not match any allowed URL patterns")
     return {"message": "URL does not match any allowed URL patterns, skipping"}
 
   # Check crawl depth limits
-  scraping_config, max_crawl_depth = _get_crawl_configs(artifact_domain)
+  scraping_config, max_crawl_depth = _get_domain_configs(artifact_domain)
 
   if crawl_request.crawl_depth > max_crawl_depth:
     logger.info(f"Crawl depth {crawl_request.crawl_depth} is greater than max crawl depth {max_crawl_depth}, skipping")
@@ -74,7 +78,7 @@ async def run_crawl_url(
     return await _process_existing_artifact(
       existing_artifact,
       crawl_request,
-      crawl_config,
+      config,
     )
 
   # Create new artifact and scrape
@@ -99,7 +103,7 @@ async def run_crawl_url(
       return await _process_existing_artifact(
         duplicate_artifact,
         crawl_request,
-        crawl_config,
+        config,
       )
     extraction_response = await _extract_data(scrape_response)
 
@@ -116,7 +120,7 @@ async def run_crawl_url(
       updated_artifact_contents,
       scrape_response,
       crawl_request,
-      artifact_domain["crawl_config"],
+      artifact_domain["config"],
     )
 
     # Save data related to the artifact
@@ -180,18 +184,18 @@ async def _get_domain(crawl_request: CrawlRequestedEventData) -> ArtifactDomain:
     raise Exception(f"Domain {crawl_request.domain_id} not found")
 
   artifact_domain = cast(ArtifactDomain, crawl_domain_response.data)
-  if not artifact_domain.get("crawl_config"):
+  if not artifact_domain.get("config"):
     logger.info(f"Domain {crawl_request.domain_id} does not have a crawl config")
     raise Exception(f"Domain {crawl_request.domain_id} does not have a crawl config")
 
   return artifact_domain
 
-def _get_crawl_configs(artifact_domain: ArtifactDomain) -> tuple[ScrapingConfig, int]:
+def _get_domain_configs(artifact_domain: ArtifactDomain) -> tuple[ScrapingConfig, int]:
   scraping_config = ScrapingConfig()
   scraping_config = scraping_config.model_copy(
-    update=artifact_domain.get("crawl_config"),
+    update=artifact_domain.get("config"),
   )
-  max_crawl_depth = artifact_domain["crawl_config"].get("max_crawl_depth", MAX_CRAWL_DEPTH)
+  max_crawl_depth = artifact_domain["config"].get("max_crawl_depth", MAX_CRAWL_DEPTH)
   return scraping_config, max_crawl_depth
 
 async def _extract_data(scrape_response: WebScraperResult) -> MetadataExtractionResponse:
@@ -258,10 +262,10 @@ async def _save_artifact_data_with_duplicate(
 async def _process_existing_artifact(
   existing_artifact: Artifact,
   base_crawl_event: CrawlRequestedEventData,
-  crawl_config: CrawlConfig,
+  config: DomainConfig,
 ) -> dict:
   logger = get_logger_from_context()
-  max_crawl_depth = crawl_config.get("max_crawl_depth", MAX_CRAWL_DEPTH)
+  max_crawl_depth = config.get("max_crawl_depth", MAX_CRAWL_DEPTH)
   if base_crawl_event.crawl_depth + 1 > max_crawl_depth:
     logger.info(f"Crawl depth {base_crawl_event.crawl_depth + 1} is greater than max crawl depth {max_crawl_depth}, skipping")
     return {"message": "Crawl depth is greater than max crawl depth, skipping"}
@@ -316,7 +320,7 @@ async def _crawl_links(
   artifact_contents: List[ArtifactContent],
   scraper_result: WebScraperResult,
   base_crawl_event: CrawlRequestedEventData,
-  crawl_config: CrawlConfig,
+  config: DomainConfig,
 ) -> dict:
   """Process and store links for an artifact."""
   # Match sections and delete existing links
@@ -324,7 +328,7 @@ async def _crawl_links(
   await _delete_existing_links(artifact_contents)
 
   # Create and insert new links
-  insert_links_payload = _create_insert_links_payload(matched_sections, crawl_config)
+  insert_links_payload = _create_insert_links_payload(matched_sections, config)
   if len(insert_links_payload) == 0:
     return {"crawl_event_ids": [], "insert_ids": []}
 
@@ -381,10 +385,10 @@ async def _delete_existing_links(
 
 def _create_insert_links_payload(
   matched_sections: List[tuple[ArtifactContent, ScrapedContent]],
-  crawl_config: CrawlConfig
+  config: DomainConfig
 ) -> List[ArtifactLinkInsert]:
   """Create payload for new links to be inserted."""
-  assert "allowed_url_patterns" in crawl_config, "Allowed URL patterns are required"
+  assert "allowed_url_patterns" in config, "Allowed URL patterns are required"
   return [
     ArtifactLinkInsert({
       "anchor_text": link.anchor_text,
@@ -393,7 +397,7 @@ def _create_insert_links_payload(
     })
     for (artifact_content, scraped_section) in matched_sections
     for link in scraped_section.scraped_links[:50]
-    if any(re.match(pattern, link.url) for pattern in crawl_config["allowed_url_patterns"])
+    if any(re.match(pattern, link.url) for pattern in config["allowed_url_patterns"])
   ]
 
 async def _insert_new_links(
@@ -488,7 +492,7 @@ async def _create_new_artifact(
         "url": crawl_request.url,
         "domain_id": crawl_request.domain_id
       },
-      on_conflict="url"
+      on_conflict="domain_id, url"
     )
     .execute()
   )

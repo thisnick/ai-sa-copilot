@@ -28,7 +28,11 @@ export function DomainSelector({
   } = useSWR<Array<ArtifactDomain>>(
     `/api/domain`,
     async () => {
-      const { data, error } = await supabase.from('artifact_domains').select('*');
+      const { data, error } = await supabase
+        .from('artifact_domains')
+        .select('*')
+        .eq('visibility', 'public')
+        .order('name', { ascending: true });
       if (error) throw error;
       return data;
     },

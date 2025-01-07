@@ -62,7 +62,7 @@ async def _get_cluster_summaries(domain_id: str):
     raise inngest.NonRetriableError(f"Domain {domain_id} not found")
 
   domain = ArtifactDomain(**domain_response.data)
-  min_cluster_size = domain["crawl_config"].get("min_cluster_size", 10)
+  min_cluster_size = domain["config"].get("min_cluster_size", 10)
 
   summarizer = ClusterSummarizer(supabase)
   top_level_clusters = await step.run(
