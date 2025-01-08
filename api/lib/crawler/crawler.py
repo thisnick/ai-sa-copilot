@@ -73,7 +73,7 @@ async def run_crawl_url(
     return {"message": "Crawl depth is greater than max crawl depth, skipping"}
 
   # Check for existing artifact
-  existing_artifact = await _get_existing_artifact(crawl_request.url)
+  existing_artifact = await _get_existing_artifact(crawl_request.url, crawl_request.domain_id)
   if existing_artifact:
     return await _process_existing_artifact(
       existing_artifact,
@@ -458,7 +458,8 @@ async def _schedule_link_crawls(
   )
 
 async def _get_existing_artifact(
-  url: str
+  url: str,
+  domain_id: str
 ) -> Optional[Artifact]:
   admin_supabase = await create_async_supabase_admin_client()
   existing_artifact_response = await (
@@ -466,6 +467,7 @@ async def _get_existing_artifact(
     .table("artifacts")
     .select("*")
     .eq("url", url)
+    .eq("domain_id", domain_id)
     .limit(1)
     .maybe_single()
     .execute()
@@ -520,6 +522,7 @@ async def _check_duplicate_content(
     .table("artifacts")
     .select("*")
     .eq("content_sha256", content_hash)
+    .eq("domain_id", artifact["domain_id"])
     .in_("crawl_status", ["scraped", "scraping"])
     .is_("crawled_as_artifact_id", None)
     .limit(1)
