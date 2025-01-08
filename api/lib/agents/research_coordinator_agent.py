@@ -78,7 +78,10 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
       return AsyncResult(value=f"Error saving requirements: {e}")
 
   async def kickoff_research(context_variables: ContextVariables, topics: List[ResearchTopic]) -> AsyncResult:
-    """Sets the research topics and kicks off the research agent
+    """This begins the runbook writing process by kicking off the research.
+    The research agent will thoroughly research your given topic and start writing the runbook.
+    Call this method if the user is interested in getting a step-by-step result on how
+    to perform a task.
 
     Arguments:
       topics: [

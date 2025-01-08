@@ -177,7 +177,6 @@ Remember:
   async def submit_writing_for_section(
     context_variables: ContextVariables,
     section_content: str,
-    continue_writing_next_section: bool = True
   ) -> AsyncResult:
     try:
       current_section_idx = context_variables.get("current_runbook_section") or 0
@@ -191,7 +190,7 @@ Remember:
       current_section.content = section_content
       next_unwritten_section_index = get_next_unwritten_section_index(context_variables, current_section_idx + 1)
 
-      if not next_unwritten_section_index or not continue_writing_next_section:
+      if not next_unwritten_section_index:
         if context_variables.get("debug", False):
           logging.debug("Session writing complete: %s", context_variables.get("runbook_sections", {}))
 
