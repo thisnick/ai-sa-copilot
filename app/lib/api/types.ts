@@ -64,7 +64,9 @@ export interface RunbookSectionOutline {
 
 export interface RunbookSection extends RunbookSectionOutline {
   /** The content of the section */
-  content: string | null;
+  content?: string | null;  /** A list of artifacts that have been retrieved for this section */
+
+  retrieved_artifacts?: ArtifactWithLinks[];
 }
 
 export interface ContextVariables {
@@ -76,6 +78,5 @@ export interface ContextVariables {
   saved_artifacts?: Record<string, ArtifactWithLinks[]>;
   runbook_sections?: RunbookSection[];
   current_runbook_section?: number;
-  section_research_artifacts?: Record<number, ArtifactWithLinks[]>;
   debug?: boolean;
 }

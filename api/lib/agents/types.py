@@ -34,7 +34,8 @@ class RunbookSectionOutline(BaseModel):
   related_artifacts: List[str] = Field(description="A list of artifact content IDs that are related to this section")
 
 class RunbookSection(RunbookSectionOutline):
-  content: str | None = Field(default=None, description="The content of the section")
+  retrieved_artifacts: Optional[List[ArtifactWithLinks]] = Field(description="A list of artifacts that have been retrieved for this section", default=[])
+  content: Optional[str] = Field(default=None, description="The content of the section")
 
 class ContextVariables(TypedDict, total=False):
   domain_id: Optional[str]
@@ -45,9 +46,7 @@ class ContextVariables(TypedDict, total=False):
   saved_artifacts: Optional[Dict[str, List[ArtifactWithLinks]]]
   runbook_sections: Optional[List[RunbookSection]]
   current_runbook_section: Optional[int]
-  section_research_artifacts: Optional[Dict[int, List[ArtifactWithLinks]]]
   debug: Optional[bool]
-
 
 class ArtifactSearchResult(TypedDict):
   artifact_content_id: str
