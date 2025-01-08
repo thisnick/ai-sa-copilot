@@ -7,6 +7,7 @@ import { ActiveTab, UIBlock } from './block';
 type ActionType =
   | 'save_requirements'
   | 'kickoff_research'
+  | 'research_runbook_topics'
   | 'query_for_artifacts'
   | 'save_artifacts'
   | 'finish_research'
@@ -19,6 +20,7 @@ const isActionType = (action: string): action is ActionType => {
   return [
     'save_requirements',
     'kickoff_research',
+    'research_runbook_topics',
     'query_for_artifacts',
     'save_artifacts',
     'finish_research',
@@ -38,6 +40,7 @@ const getAgentActionText = (
     case 'save_requirements':
       return tense === 'present' ? 'Saving requirements' : 'Saved requirements';
     case 'kickoff_research':
+    case 'research_runbook_topics':
       return tense === 'present' ? 'Planning research topics' : 'Planned research topics';
 
     // Topic Research Agent

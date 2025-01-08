@@ -42,8 +42,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
        - Call `insert_runbook_section` to add a new section to the runbook outline at a specific index
        - Call `update_runbook_section` to update an existing section in the runbook outline at a specific index
        - Call `delete_runbook_section` to remove a section from the runbook outline at a specific index
-    5. Once the user approves the outline, call `start_writing_runbook` to start writing
-       the runbook.
+    5. Once the user approves the outline, call `start_writing_runbook` to fill the updated runbook sections.
     6. If the user is asking you to do something that you are unable to do, such as
        researching for a topic, you should hand off the control back to the research
        coordinator agent by calling `handoff_to_research_coordinator_agent`, who will
@@ -176,7 +175,7 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
     runbook_sections = context_variables.get("runbook_sections") or []
     for idx, section in enumerate(runbook_sections[start_index:]):
       if not section.content:
-        return idx
+        return idx + start_index
     return None
 
   async def handoff_to_research_coordinator_agent(context_variables: ContextVariables):
