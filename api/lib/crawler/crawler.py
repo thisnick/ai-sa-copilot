@@ -522,6 +522,7 @@ async def _check_duplicate_content(
     .table("artifacts")
     .select("*")
     .eq("content_sha256", content_hash)
+    .eq("domain_id", artifact["domain_id"])
     .in_("crawl_status", ["scraped", "scraping"])
     .is_("crawled_as_artifact_id", None)
     .limit(1)
