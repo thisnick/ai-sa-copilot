@@ -230,6 +230,7 @@ async def _save_artifact_data(
       "summary": extraction_response.whole_page_summary,
       "title": scrape_response.page_title,
       "content_sha256": content_hash,
+      "crawled_as_artifact_id": None,
     })\
     .eq("artifact_id", artifact["artifact_id"])\
     .execute()
@@ -523,6 +524,7 @@ async def _check_duplicate_content(
     .select("*")
     .eq("content_sha256", content_hash)
     .eq("domain_id", artifact["domain_id"])
+    .neq("artifact_id", artifact["artifact_id"])
     .in_("crawl_status", ["scraped", "scraping"])
     .is_("crawled_as_artifact_id", None)
     .limit(1)
