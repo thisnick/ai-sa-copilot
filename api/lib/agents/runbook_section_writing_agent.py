@@ -29,11 +29,29 @@ def create_runbook_section_writing_agent(settings: Settings) -> AsyncAgent:
     current_section_idx = context_variables.get("current_runbook_section") or 0
     current_section = (context_variables.get("runbook_sections") or [])[current_section_idx or 0]
     saved_artifacts = context_variables.get("saved_artifacts", {})
-    section_research_artifacts = (context_variables.get("section_research_artifacts") or {}).get(current_section_idx) or []
+    saved_artifacts_by_artifact_content_id = {
+      artifact.artifact_content_id: artifact
+      for artifact_list in (saved_artifacts or {}).values()
+      for artifact in artifact_list
+    }
+
+    # Create a dictionary to deduplicate by artifact_content_id
+    unique_artifacts = {}
+
+    # Add current section's retrieved artifacts
+    for artifact in (current_section.retrieved_artifacts or []):
+      unique_artifacts[artifact.artifact_content_id] = artifact
+
+    # Add saved artifacts, potentially overwriting duplicates
+    for artifact_content_id in (current_section.related_artifacts or []):
+      if artifact := saved_artifacts_by_artifact_content_id.get(artifact_content_id):
+        unique_artifacts[artifact_content_id] = artifact
+
+    # Convert back to list
+    retrieved_artifacts = list(unique_artifacts.values())
 
     domain_id = context_variables.get("domain_id")
     formatted_topics = format_knowledge_topics(await async_get_knowledge_topics(domain_id)) if domain_id else ""
-
 
     prompt = f"""You are an agent responsible for fleshing out the detail sections
 of a runbook to set up a software system.
@@ -54,7 +72,8 @@ Here is your workflow:
    `query_for_artifacts` to search for more artifacts, which will give you summaries
    of the artifacts that are related to the queries. You can use the knowledge topics and
    key concepts to help you find the most relevant artifacts.
-4. After you have determined which artifacts you need to write your section, be sure
+4. After you have determined which artifacts you need to write your section, if these
+   artifacts are not already in the "Full text of retrieved artifacts" section, be sure
    to call `retrieve_artifacts` to get the actual contents of the artifacts. You
    should only use the contents from the actual artifacts, not the summaries.
 5. If you have gathered all the article contents you need to start writing, call
@@ -120,7 +139,7 @@ Remember:
 
 # Full text of retrieved artifacts:
 
-{format_artifacts(section_research_artifacts, include_links=False, treat_metadata_as_content=False)}
+{format_artifacts(retrieved_artifacts, include_links=False, treat_metadata_as_content=False)}
     """
     return prompt
 
@@ -132,13 +151,14 @@ Remember:
       artifacts = await async_get_artifacts(artifact_content_ids)
 
       current_section_idx = context_variables.get("current_runbook_section") or 0
-      existing_section_research_artifacts = context_variables.get("section_research_artifacts") or {}
-      existing_section_research_artifacts[current_section_idx] = artifacts
+      runbook_sections = (context_variables.get("runbook_sections") or []).copy()
+      current_section = runbook_sections[current_section_idx]
+      current_section.retrieved_artifacts = artifacts
 
       return AsyncResult(
         value=f"Artifacts (ids: {artifact_content_ids}) retrieved. They are available to you in the system instructions in the 'Full text of retrieved artifacts' section.",
         context_variables={
-          "section_research_artifacts": existing_section_research_artifacts
+          "runbook_sections": runbook_sections
         }
       )
     except Exception as e:
