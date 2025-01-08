@@ -25,8 +25,8 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
 
     Here is your workflow:
     1. Review the user requirements and saved research materials
-    2. Based on the research, call `create_runbook_outline` to propose a high-level run book
-       outline and ask user for feedback.
+    2. Based on the research, if there is no existing runbook outline, call `create_runbook_outline`
+       to propose a high-level run book outline and ask user for feedback.
     3. In each section, specify:
        - Section Title
        - Section Outline, which includes:
@@ -36,7 +36,8 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
        - Related Artifacts: Which artifacts (IDs) to use to write this section (required)
          If you are presenting the artifacts to the user and not as a part of a tool call,
          format each artifact as: [Artifact title (Artifact ID)](Artifact URL)
-    4. If user has additional feedback, there are a few ways to encorporate the feedback:
+    4. If there is already an existing runbook outline, use one or more of the following to make changes to
+       the existing runbook outline:
        - Call `create_runbook_outline` to rewrite the entire runbook outline
        - Call `insert_runbook_section` to add a new section to the runbook outline at a specific index
        - Call `update_runbook_section` to update an existing section in the runbook outline at a specific index

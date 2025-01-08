@@ -75,8 +75,7 @@ def create_topic_research_agent(settings: Settings) -> AsyncAgent:
       queries: an array of strings in JSON format, i.e. `["query1", "query2", ...]`. Make sure it is a valid JSON array.
     """
     try:
-      if isinstance(queries, str):
-        queries = json.loads(queries)
+      assert isinstance(queries, list), "Queries must be a list"
       domain_id = context_variables.get("domain_id")
       assert domain_id is not None, "Domain ID is required"
       return await async_query_for_artifacts(queries, domain_id)
