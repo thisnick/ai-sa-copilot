@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 class ArtifactSummary(BaseModel):
   url: str
-  title: str
+  title: Optional[str] = None
   summary: str
 
 class ArtifactWithLinks(ArtifactSummary):
