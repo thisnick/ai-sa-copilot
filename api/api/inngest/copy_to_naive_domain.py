@@ -64,7 +64,7 @@ async def _get_artifacts(domain_id: str, page: int) -> List[Artifact]:
     .table("artifacts")
     .select("*")
     .eq("domain_id", domain_id)
-    .eq("status", "scraped")
+    .eq("crawl_status", "scraped")
     .not_.is_("parsed_text",  None)
     .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1)
     .execute()
