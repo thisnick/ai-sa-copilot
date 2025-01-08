@@ -140,7 +140,9 @@ class WebScraper():
       if not section_content:
         continue
 
-      if len(section_content) > scraping_config.max_chunk_size and split_depth < len(scraping_config.splitting_selector) - 1:
+      parsed_content = self.parse_content(section_content, base_url)
+
+      if len(parsed_content) > scraping_config.max_chunk_size and split_depth < len(scraping_config.splitting_selector) - 1:
         split_successful = False
         async for subsection in self.extract_page_sections(section_content, base_url, scraping_config, split_depth + 1, id_counter):
           id_counter += 1
@@ -159,7 +161,7 @@ class WebScraper():
           id = str(id_element.get(scraping_config.section_id_selector))
       section_title_soup = section.select_one(scraping_config.title_selector)
       section_title = section_title_soup.text if section_title_soup else ""
-      parsed_content = self.parse_content(section_content, base_url)
+
       links = section.find_all('a')
       scraped_links = [
         ScrapedLink(
