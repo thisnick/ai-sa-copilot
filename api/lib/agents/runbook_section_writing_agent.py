@@ -171,7 +171,7 @@ Remember:
     runbook_sections = context_variables.get("runbook_sections") or []
     for idx, section in enumerate(runbook_sections[start_index:]):
       if not section.content:
-        return idx
+        return idx + start_index
     return None
 
   async def submit_writing_for_section(
@@ -190,7 +190,7 @@ Remember:
       current_section.content = section_content
       next_unwritten_section_index = get_next_unwritten_section_index(context_variables, current_section_idx + 1)
 
-      if not next_unwritten_section_index:
+      if next_unwritten_section_index is None:
         if context_variables.get("debug", False):
           logging.debug("Session writing complete: %s", context_variables.get("runbook_sections", {}))
 
