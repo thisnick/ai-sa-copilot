@@ -59,7 +59,16 @@ async def _copy_domain_artifacts(source_domain_id: str, target_domain_id: str) -
 
 async def _get_artifacts(domain_id: str, page: int) -> List[Artifact]:
   supabase = await create_async_supabase_admin_client()
-  artifact_response = await supabase.table("artifacts").select("*").eq("domain_id", domain_id).range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1).execute()
+  artifact_response = await (
+    supabase
+    .table("artifacts")
+    .select("*")
+    .eq("domain_id", domain_id)
+    .eq("status", "scraped")
+    .not_.is_("parsed_text",  None)
+    .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1)
+    .execute()
+  )
   return [Artifact(**artifact_data) for artifact_data in artifact_response.data]
 
 async def _upsert_artifact_contents(payload: List[ArtifactContentInsert]) -> dict:
@@ -74,6 +83,8 @@ async def _ingest_artifacts(domain_id: str, page: int) -> dict:
   splitter = HierarchicalMarkdownSplitter(chunk_size=512)
   contents_processed = 0
   for artifact in artifacts:
+    if artifact["parsed_text"] is None:
+      continue
     chunks = list(splitter.split(artifact["parsed_text"]))
     embeddings = await _embed_strings(chunks)
     upsert_payload = [
