@@ -29,7 +29,7 @@ class ScrapingConfig(BaseModel):
     'article',
     'section',
   ]
-  max_chunk_size: int = 50000
+  max_chunk_size: int = 10000
   title_selector: str = 'title, h1, h2, h3'
   section_id_selector: Optional[str] = None
 

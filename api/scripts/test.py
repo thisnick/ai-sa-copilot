@@ -23,7 +23,7 @@ metadata_schema_str = json.dumps(ArtifactMetadata.model_json_schema())
 prompt=f"Extract the title, summary, main content links, and nav_bar_links. This is the schema of the output:\n{metadata_schema_str}"
 
 scraping_result = scraper.scrape(
-    url="https://supabase.com/docs/reference/javascript/auth-signinwithpassword",
+    url="https://supabase.com/docs/guides/cron",
     scraping_config=ScrapingConfig(
         splitting_selector=[
           'html',
