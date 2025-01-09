@@ -42,7 +42,9 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
        - Call `insert_runbook_section` to add a new section to the runbook outline at a specific index
        - Call `update_runbook_section` to update an existing section in the runbook outline at a specific index
        - Call `delete_runbook_section` to remove a section from the runbook outline at a specific index
-    5. Once the user approves the outline, call `start_writing_runbook` to fill the updated runbook sections.
+    5. After you call one of the above functions, give the user a chance to review the changes and approve them.
+       Use the functions above to incorporate the user feedback. Once the user approves the outline, call
+       `start_writing_runbook` to fill the updated runbook sections.
     6. If the user is asking you to do something that you are unable to do, such as
        researching for a topic, you should hand off the control back to the research
        coordinator agent by calling `handoff_to_research_coordinator_agent`, who will
