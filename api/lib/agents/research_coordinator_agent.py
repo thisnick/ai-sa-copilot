@@ -44,7 +44,9 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
       * save_requirements: When the user provides new requirements
       * research_runbook_topics: When the user is asking to write a new runbook from scratch or to update the runbook. You will kick off the runbook writing
         by researching the user's questions and requirements.
-
+      * update_runbook_outline_without_research: When the user wants to update the runbook outline without conducting research.
+      * update_runbook_section_content_without_research: When the user wants to update the runbook section content without conducting research.
+      * answer_question_without_updating_runbook: When the user wants to answer a question without the need to update the runbook.
     Knowledge topics:
     {formatted_topics}
 
@@ -133,6 +135,35 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
       logging.error(f"Error in research_runbook_topics: {str(e)}")
       return AsyncResult(value=f"Error kicking off research: {e}")
 
+  async def update_runbook_outline_without_research(context_variables: ContextVariables) -> AsyncResult:
+    """Hand of the task to update the runbook outline without conducting research. This is useful when the user wants to change the runbook structure or add new sections.
+    without the need to research the topics again.
+    """
+    from .runbook_planning_agent import create_runbook_planning_agent
+    return AsyncResult(
+      agent=create_runbook_planning_agent(settings),
+    )
+
+  async def update_runbook_section_content_without_research(context_variables: ContextVariables, section_index: int) -> AsyncResult:
+    """Hand off the task to update the runbook section content without conducting research. This is useful when the user does not want to change the runbook structure.
+    and only wants to update the copy of the content without changing its outline or researching new topics.
+    """
+    from .runbook_section_writing_agent import create_runbook_section_writing_agent
+    return AsyncResult(
+      agent=create_runbook_section_writing_agent(settings),
+      context_variables={
+        "current_section_idx": section_index
+      }
+    )
+
+  async def answer_question_without_updating_runbook(context_variables: ContextVariables) -> AsyncResult:
+    """Hand off the task to answer the user's question without updating the runbook. This is useful when the user wants to answer a question
+    without changing the runbook structure or researching new topics.
+    """
+    from .question_answer_agent import create_question_answer_agent
+    return AsyncResult(
+      agent=create_question_answer_agent(settings),
+    )
 
   return AsyncAgent(
     name=AGENT_RESEARCH_COORDINATOR,
@@ -140,6 +171,9 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     functions=[
       save_requirements,
       research_runbook_topics,
+      update_runbook_outline_without_research,
+      update_runbook_section_content_without_research,
+      answer_question_without_updating_runbook,
     ],
     model=settings.agent_llm_model
   )
