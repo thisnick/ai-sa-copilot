@@ -87,6 +87,8 @@ def create_research_coordinator_agent(settings: Settings) -> AsyncAgent:
     start writing the runbook. Call this method if the user is interested in getting a step-by-step result on how
     to perform a task.
 
+    Please do not include more than 3 topics. You can ask the user whether to add them after the initial runbook is written.
+
     Arguments:
       topics: [
         {
