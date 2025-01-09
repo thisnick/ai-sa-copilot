@@ -98,7 +98,7 @@ def format_topic_artifacts(artifacts: Dict[str, List[ArtifactWithLinks]], includ
 
 def format_written_sections(sections: List[RunbookSection], up_to: Optional[int] = None) -> str:
   return "\n\n---\n\n".join([
-    f"Section {i + 1}\n\n{section.content}"
+    f"Section {i + 1}\n\n(Index: {i})\n\nContent:\n\n{section.content}"
     for i, section in enumerate(sections[:up_to])
     if section.content
   ]) or "None"
