@@ -34,6 +34,10 @@ jobs:
             git diff
             exit 1
           fi
+      - name: Run pgTAP tests
+        run: |
+          supabase db reset --local
+          supabase test db
 
   test_api:
     runs-on: ubuntu-latest
