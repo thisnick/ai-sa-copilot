@@ -15,6 +15,8 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: ${{ secrets.PRODUCTION_PROJECT_ID }}
       SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET: ${{ secrets.SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET }}
+      SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID: ${{ secrets.SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID }}
+      SITE_URL: ${{ vars.SITE_URL }}
 
     steps:
       - uses: actions/checkout@v4
@@ -23,10 +25,11 @@ jobs:
         with:
           version: latest
 
-      - name: Cache Docker images
-        uses: ScribeMD/docker-cache@0.5.0
-        with:
-          key: docker-${{ runner.os }}-${{ hashFiles('.github/workflows/production.yml') }}
+      - name: Link to Supabase
+        run: supabase link --project-ref $SUPABASE_PROJECT_ID
 
-      - run: supabase link --project-ref $SUPABASE_PROJECT_ID
-      - run: supabase db push
+      - name: Push config
+        run: supabase config push
+
+      - name: Push migrations
+        run: supabase db push

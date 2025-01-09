@@ -90,45 +90,57 @@ def create_runbook_planning_agent(settings: Settings) -> AsyncAgent:
 
   async def insert_runbook_section(context_variables: ContextVariables, section_outline: RunbookSectionOutline, index: int) -> AsyncResult:
     """Insert the section outline into the runbook sections array at the specified index."""
-    runbook_sections = context_variables.get("runbook_sections") or []
+    try:
+      runbook_sections = context_variables.get("runbook_sections") or []
 
-    # Ensure the insertion index fits safely within the list (met or at the end).
-    # You can decide what to do if the index is below 0 or above len(runbook_sections).
-    if index < 0:
-      index = 0
-    if index > len(runbook_sections):
-      index = len(runbook_sections)
+      # Ensure the insertion index fits safely within the list (met or at the end).
+      # You can decide what to do if the index is below 0 or above len(runbook_sections).
+      if index < 0:
+        index = 0
+      if index > len(runbook_sections):
+        index = len(runbook_sections)
 
-    runbook_sections.insert(index, RunbookSection(**section_outline.model_dump()))
+      runbook_sections.insert(index, RunbookSection(**section_outline.model_dump()))
 
-    return AsyncResult(
-      value="Section outline inserted successfully",
-      context_variables={
-        "runbook_sections": runbook_sections,
-      }
-    )
+      return AsyncResult(
+        value="Section outline inserted successfully",
+        context_variables={
+          "runbook_sections": runbook_sections,
+        }
+      )
+    except Exception as e:
+      logging.error(f"Error inserting runbook section: {str(e)}")
+      return AsyncResult(value=f"Error inserting runbook section: {e}")
 
   async def update_runbook_section(context_variables: ContextVariables, section_outline: RunbookSectionOutline, index: int) -> AsyncResult:
     """Update the section outline at the specified index."""
-    runbook_sections = context_variables.get("runbook_sections") or []
-    runbook_sections[index] = RunbookSection(**section_outline.model_dump())
-    return AsyncResult(
-      value="Section outline updated successfully",
-      context_variables={
-        "runbook_sections": runbook_sections,
-      }
-    )
+    try:
+      runbook_sections = context_variables.get("runbook_sections") or []
+      runbook_sections[index] = RunbookSection(**section_outline.model_dump())
+      return AsyncResult(
+        value="Section outline updated successfully",
+        context_variables={
+          "runbook_sections": runbook_sections,
+        }
+      )
+    except Exception as e:
+      logging.error(f"Error updating runbook section: {str(e)}")
+      return AsyncResult(value=f"Error updating runbook section: {e}")
 
   async def delete_runbook_section(context_variables: ContextVariables, index: int) -> AsyncResult:
     """Delete the section outline at the specified index."""
-    runbook_sections = context_variables.get("runbook_sections") or []
-    runbook_sections.pop(index)
-    return AsyncResult(
-      value="Section outline deleted successfully",
-      context_variables={
-        "runbook_sections": runbook_sections,
-      }
-    )
+    try:
+      runbook_sections = context_variables.get("runbook_sections") or []
+      runbook_sections.pop(index)
+      return AsyncResult(
+        value="Section outline deleted successfully",
+        context_variables={
+          "runbook_sections": runbook_sections,
+        }
+      )
+    except Exception as e:
+      logging.error(f"Error deleting runbook section: {str(e)}")
+      return AsyncResult(value=f"Error deleting runbook section: {e}")
 
   async def create_runbook_outline(context_variables: ContextVariables, section_outlines: List[RunbookSectionOutline]) -> AsyncResult:
     """save the section outline you created and replace the existing one. If there is an existing outline,
