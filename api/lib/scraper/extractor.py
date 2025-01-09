@@ -78,7 +78,7 @@ class DataExtractor():
   async def _async_extract_data(
     self,
     parsed_content: str,
-    title: str,
+    title: str | None,
     extraction_prompt: str,
     extraction_schema: Type[TData],
     context: Optional[str] = None,
@@ -106,7 +106,7 @@ class DataExtractor():
       """
       content_message = f"""
 <Document>
-  <Title>{title}</Title>
+  <Title>{title or 'None'}</Title>
   <Content>{truncated_content}</Content>
 </Document>
 """
@@ -151,11 +151,12 @@ class DataExtractor():
       api_key=self.model_api_key,
     )
 
-    summary_result = summary_response.choices[0].message.content
+
+    summary_result = str(summary_response.choices[0].message.content)  # type: ignore
 
     extract_messages = [
       {"role": "system", "content": extraction_prompt},
-      {"role": "user", "content": f"<Title>{title}</Title>\n\n<Content>{truncated_content}</Content>"}
+      {"role": "user", "content": f"<Title>{title or 'None'}</Title>\n\n<Content>{truncated_content}</Content>"}
     ]
 
     extract_response = await acompletion(
@@ -167,7 +168,7 @@ class DataExtractor():
       api_key=self.model_api_key,
     )
 
-    extract_result = extract_response.choices[0].message.content
+    extract_result = str(extract_response.choices[0].message.content)  # type: ignore
     try:
       raw_result = json.loads(extract_result)
       extracted_page_data = extraction_schema.model_validate(raw_result)
