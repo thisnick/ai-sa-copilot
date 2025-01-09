@@ -82,13 +82,13 @@ class WebScraper():
 
   async def async_fetch_content_playwright(self, url: str) -> str:
     """Fetch content from URL using Playwright"""
-    from playwright.async_api import async_playwright
+    from playwright.async_api import async_playwright, Browser
     from undetected_playwright import Malenia
 
     self.logger.info(f"Scraping with Playwright: {url}")
 
     attempt = 0
-
+    browser: Optional[Browser] = None
     while attempt < self.RETRY_LIMIT:
       try:
         async with async_playwright() as p:
@@ -116,7 +116,8 @@ class WebScraper():
           raise Exception(f"Unable to scrape {url}, error: {e}")
 
       finally:
-        await browser.close()
+        if browser:
+          await browser.close()
 
     assert False, "Reached the end of the async_fetch_content_playwright method without returning a value"
 
