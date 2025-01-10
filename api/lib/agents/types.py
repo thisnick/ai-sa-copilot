@@ -47,6 +47,7 @@ class ContextVariables(TypedDict, total=False):
   runbook_sections: Optional[List[RunbookSection]]
   current_runbook_section: Optional[int]
   debug: Optional[bool]
+  current_question: Optional[str]
 
 class ArtifactSearchResult(TypedDict):
   artifact_content_id: str
