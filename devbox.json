@@ -2,7 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.7/.schema/devbox.schema.json",
   "packages": [
     "nodejs@latest",
-    "pnpm@latest"
+    "pnpm@latest",
+    "postgresql@latest"
   ],
   "shell": {
     "init_hook": [
@@ -11,6 +12,23 @@
     "scripts": {
       "test": [
         "echo \"Error: no test specified\" && exit 1"
+      ],
+      "db:production-backup": [
+        "mkdir -p supabase/.data",
+        "source \"$(pwd)/.env\" && pg_dump -d $PRODUCTION_DATABASE_URL -Fc --clean --if-exists --no-owner --no-privileges --exclude-table-data=profiles --exclude-table-data=threads --exclude-table-data=thread_states -f supabase/.data/prod-backup.dump"
+      ],
+      "db:dev-backup": [
+        "mkdir -p supabase/.data",
+        "source \"$(pwd)/.env\" && pg_dump -d $DATABASE_URL -Fc --clean --if-exists --no-owner --no-privileges --exclude-table-data=profiles --exclude-table-data=threads --exclude-table-data=thread_states -f supabase/.data/dev-backup.dump"
+      ],
+      "db:restore": [
+        "if [ -z \"$1\" ]; then echo \"Error: Please provide a backup file path as an argument\" && exit 1; fi",
+        "if [ ! -f \"$1\" ]; then echo \"Error: Backup file '$1' does not exist\" && exit 1; fi",
+        "source \"$(pwd)/.env\" && if [[ ! \"$DATABASE_URL\" =~ \"127.0.0.1\" && ! \"$DATABASE_URL\" =~ \"localhost\" ]]; then echo \"Error: For safety, this script can only restore to a local database (127.0.0.1 or localhost)\" && exit 1; fi",
+        "source \"$(pwd)/.env\" && pg_restore -d $DATABASE_URL --clean --if-exists --no-owner --no-privileges --disable-triggers --schema=public \"$1\""
+      ],
+      "dev": [
+        "cd app && pnpm run dev"
       ]
     }
   }

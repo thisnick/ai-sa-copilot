@@ -9,6 +9,12 @@
     "scripts": {
       "test": [
         "echo \"Error: no test specified\" && exit 1"
+      ],
+      "dev:run-frontend": [
+        "npm run frontend-dev"
+      ],
+      "dev:run": [
+        "npm run dev"
       ]
     }
   }
